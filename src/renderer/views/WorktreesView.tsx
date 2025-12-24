@@ -1,3 +1,6 @@
+import type { GitWorktree, WorktreeCreateOptions } from '@shared/types';
+import { Filter, RefreshCw, Search } from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,9 +15,6 @@ import { useGitBranches } from '@/hooks/useGit';
 import { useWorktreeCreate, useWorktreeList, useWorktreeRemove } from '@/hooks/useWorktree';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useWorktreeStore } from '@/stores/worktree';
-import type { GitWorktree, WorktreeCreateOptions } from '@shared/types';
-import { Filter, RefreshCw, Search } from 'lucide-react';
-import * as React from 'react';
 
 type FilterType = 'all' | 'active' | 'stale';
 

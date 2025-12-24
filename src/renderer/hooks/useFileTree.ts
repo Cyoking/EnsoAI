@@ -69,7 +69,11 @@ export function useFileTree({ rootPath, enabled = true }: UseFileTreeOptions) {
                 // Mark as loading and fetch
                 loadChildren(path).then((children) => {
                   setTree((current) =>
-                    updateNodeChildren(current, path, children.map((c) => ({ ...c })))
+                    updateNodeChildren(
+                      current,
+                      path,
+                      children.map((c) => ({ ...c }))
+                    )
                   );
                 });
                 return { ...node, isLoading: true };

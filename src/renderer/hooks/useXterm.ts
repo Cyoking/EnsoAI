@@ -1,5 +1,3 @@
-import { defaultDarkTheme, getXtermTheme } from '@/lib/ghosttyTheme';
-import { useSettingsStore } from '@/stores/settings';
 import { FitAddon } from '@xterm/addon-fit';
 import { LigaturesAddon } from '@xterm/addon-ligatures';
 import { SearchAddon } from '@xterm/addon-search';
@@ -8,6 +6,8 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal } from '@xterm/xterm';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { defaultDarkTheme, getXtermTheme } from '@/lib/ghosttyTheme';
+import { useSettingsStore } from '@/stores/settings';
 import '@xterm/xterm/css/xterm.css';
 
 export interface UseXtermOptions {
@@ -38,9 +38,15 @@ export interface UseXtermResult {
   /** Get current terminal instance */
   terminal: Terminal | null;
   /** Search for text in terminal */
-  findNext: (term: string, options?: { caseSensitive?: boolean; wholeWord?: boolean; regex?: boolean }) => boolean;
+  findNext: (
+    term: string,
+    options?: { caseSensitive?: boolean; wholeWord?: boolean; regex?: boolean }
+  ) => boolean;
   /** Search backwards for text */
-  findPrevious: (term: string, options?: { caseSensitive?: boolean; wholeWord?: boolean; regex?: boolean }) => boolean;
+  findPrevious: (
+    term: string,
+    options?: { caseSensitive?: boolean; wholeWord?: boolean; regex?: boolean }
+  ) => boolean;
   /** Clear search decorations */
   clearSearch: () => void;
 }

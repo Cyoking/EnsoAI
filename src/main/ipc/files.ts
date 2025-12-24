@@ -1,6 +1,6 @@
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { IPC_CHANNELS, type FileEntry } from '@shared/types';
+import { type FileEntry, IPC_CHANNELS } from '@shared/types';
 import { BrowserWindow, ipcMain } from 'electron';
 import { FileWatcher } from '../services/files/FileWatcher';
 

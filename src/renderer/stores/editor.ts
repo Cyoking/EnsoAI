@@ -66,9 +66,7 @@ export const useEditorStore = create<EditorState>((set) => ({
 
   updateFileContent: (path, content) =>
     set((state) => ({
-      tabs: state.tabs.map((tab) =>
-        tab.path === path ? { ...tab, content, isDirty: true } : tab
-      ),
+      tabs: state.tabs.map((tab) => (tab.path === path ? { ...tab, content, isDirty: true } : tab)),
     })),
 
   markFileSaved: (path) =>

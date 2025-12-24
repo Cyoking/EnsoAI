@@ -1,4 +1,4 @@
-import { type BrowserWindow, Menu, app, shell } from 'electron';
+import { app, type BrowserWindow, Menu, shell } from 'electron';
 
 export type MenuAction = 'open-settings' | 'toggle-devtools' | 'open-action-panel';
 

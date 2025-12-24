@@ -1,9 +1,9 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   TerminalSearchBar,
   type TerminalSearchBarRef,
 } from '@/components/terminal/TerminalSearchBar';
 import { useXterm } from '@/hooks/useXterm';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface AgentTerminalProps {
   cwd?: string;

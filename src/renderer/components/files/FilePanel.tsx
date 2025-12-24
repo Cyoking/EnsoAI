@@ -1,6 +1,6 @@
+import { useCallback, useState } from 'react';
 import { useEditor } from '@/hooks/useEditor';
 import { useFileTree } from '@/hooks/useFileTree';
-import { useCallback, useState } from 'react';
 import { EditorArea } from './EditorArea';
 import { FileTree } from './FileTree';
 import { NewItemDialog } from './NewItemDialog';

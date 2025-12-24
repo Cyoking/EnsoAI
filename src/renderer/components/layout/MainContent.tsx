@@ -1,9 +1,9 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { FileCode, FolderOpen, GitBranch, Plus, Sparkles, Terminal } from 'lucide-react';
 import { OpenInMenu } from '@/components/app/OpenInMenu';
 import { AgentPanel } from '@/components/chat/AgentPanel';
 import { FilePanel } from '@/components/files';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, motion } from 'framer-motion';
-import { FileCode, FolderOpen, GitBranch, Plus, Sparkles, Terminal } from 'lucide-react';
 import { TerminalPanel } from '../terminal';
 
 type TabId = 'chat' | 'file' | 'terminal' | 'source-control';

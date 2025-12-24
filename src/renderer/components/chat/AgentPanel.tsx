@@ -1,5 +1,5 @@
-import { BUILTIN_AGENT_IDS, useSettingsStore } from '@/stores/settings';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BUILTIN_AGENT_IDS, useSettingsStore } from '@/stores/settings';
 import { AgentTerminal } from './AgentTerminal';
 import { type Session, SessionBar } from './SessionBar';
 
@@ -20,7 +20,9 @@ const AGENT_INFO: Record<string, { name: string; command: string }> = {
   auggie: { name: 'Auggie', command: 'auggie' },
 };
 
-function getDefaultAgentId(agentSettings: Record<string, { enabled: boolean; isDefault: boolean }>): string {
+function getDefaultAgentId(
+  agentSettings: Record<string, { enabled: boolean; isDefault: boolean }>
+): string {
   // Find the default agent
   for (const [id, config] of Object.entries(agentSettings)) {
     if (config.isDefault && config.enabled) {
@@ -37,7 +39,11 @@ function getDefaultAgentId(agentSettings: Record<string, { enabled: boolean; isD
   return 'claude';
 }
 
-function createSession(cwd: string, agentId: string, customAgents: Array<{ id: string; name: string; command: string }>): Session {
+function createSession(
+  cwd: string,
+  agentId: string,
+  customAgents: Array<{ id: string; name: string; command: string }>
+): Session {
   // Check if it's a custom agent
   const customAgent = customAgents.find((a) => a.id === agentId);
   const info = customAgent
@@ -249,7 +255,14 @@ export function AgentPanel({ repoPath, cwd, isActive = false }: AgentPanelProps)
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isActive, activeSessionId, currentWorktreeSessions, handleNewSession, handleCloseSession, handleSelectSession]);
+  }, [
+    isActive,
+    activeSessionId,
+    currentWorktreeSessions,
+    handleNewSession,
+    handleCloseSession,
+    handleSelectSession,
+  ]);
 
   return (
     <div className="relative h-full w-full">

@@ -1,14 +1,18 @@
-import { Select, SelectItem, SelectPopup, SelectTrigger } from '@/components/ui/select';
-import { useDetectedApps, useOpenWith } from '@/hooks/useAppDetector';
 import { AppCategory, type DetectedApp } from '@shared/types';
 import { ChevronDown, FileCode, FolderOpen, Terminal } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Select, SelectItem, SelectPopup, SelectTrigger } from '@/components/ui/select';
+import { useDetectedApps, useOpenWith } from '@/hooks/useAppDetector';
 
 function AppIcon({
   bundleId,
   name,
   fallback: Fallback,
-}: { bundleId: string; name: string; fallback: React.ElementType }) {
+}: {
+  bundleId: string;
+  name: string;
+  fallback: React.ElementType;
+}) {
   const [icon, setIcon] = useState<string | null>(null);
 
   useEffect(() => {

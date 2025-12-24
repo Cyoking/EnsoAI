@@ -1,3 +1,5 @@
+import type { GitStatus, GitWorktree } from '@shared/types';
+import { GitBranch } from 'lucide-react';
 import {
   Empty,
   EmptyDescription,
@@ -6,8 +8,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { GitStatus, GitWorktree } from '@shared/types';
-import { GitBranch } from 'lucide-react';
 import { WorktreeCard } from './WorktreeCard';
 
 interface WorktreeListProps {

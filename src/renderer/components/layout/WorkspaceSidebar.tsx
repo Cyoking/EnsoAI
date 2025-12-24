@@ -1,3 +1,5 @@
+import { FolderGit2, FolderMinus, PanelLeftClose, Plus, Search, Settings } from 'lucide-react';
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -9,8 +11,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { FolderGit2, FolderMinus, PanelLeftClose, Plus, Search, Settings } from 'lucide-react';
-import { useState } from 'react';
 
 interface Repository {
   name: string;

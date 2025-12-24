@@ -1,3 +1,14 @@
+import type { GitBranch as GitBranchType, GitWorktree, WorktreeCreateOptions } from '@shared/types';
+import {
+  FolderOpen,
+  GitBranch,
+  PanelLeftClose,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+} from 'lucide-react';
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -10,17 +21,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { CreateWorktreeDialog } from '@/components/worktree/CreateWorktreeDialog';
 import { cn } from '@/lib/utils';
-import type { GitBranch as GitBranchType, GitWorktree, WorktreeCreateOptions } from '@shared/types';
-import {
-  FolderOpen,
-  GitBranch,
-  PanelLeftClose,
-  Plus,
-  RefreshCw,
-  Search,
-  Trash2,
-} from 'lucide-react';
-import { useState } from 'react';
 
 interface WorktreePanelProps {
   worktrees: GitWorktree[];
@@ -201,11 +201,19 @@ export function WorktreePanel({
                 onChange={(e) => setDeleteBranch(e.target.checked)}
                 className="h-4 w-4 rounded border-input"
               />
-              <span>同时删除分支 <strong>{worktreeToDelete.branch}</strong></span>
+              <span>
+                同时删除分支 <strong>{worktreeToDelete.branch}</strong>
+              </span>
             </label>
           )}
           <AlertDialogFooter>
-            <AlertDialogClose render={<Button variant="outline" disabled={isDeleting}>取消</Button>} />
+            <AlertDialogClose
+              render={
+                <Button variant="outline" disabled={isDeleting}>
+                  取消
+                </Button>
+              }
+            />
             <Button
               variant="destructive"
               disabled={isDeleting}

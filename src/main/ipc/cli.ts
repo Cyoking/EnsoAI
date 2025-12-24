@@ -1,5 +1,5 @@
-import { IPC_CHANNELS } from '@shared/types';
 import type { CustomAgent } from '@shared/types';
+import { IPC_CHANNELS } from '@shared/types';
 import { ipcMain } from 'electron';
 import { cliDetector } from '../services/cli/CliDetector';
 

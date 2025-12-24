@@ -1,6 +1,6 @@
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
-import { type VariantProps, cva } from 'class-variance-authority';
+import { cva, type VariantProps } from 'class-variance-authority';
 import type * as React from 'react';
 
 import { Separator } from '@/components/ui/separator';
@@ -38,7 +38,6 @@ function Group({
       className={cn(groupVariants({ orientation }), className)}
       data-orientation={orientation}
       data-slot="group"
-      // biome-ignore lint/a11y/useSemanticElements: This is a generic group component that may contain various types of controls
       role="group"
       {...props}
     >

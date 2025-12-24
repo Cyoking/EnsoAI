@@ -1,5 +1,8 @@
 'use client';
 
+import { Dialog as CommandDialogPrimitive } from '@base-ui/react/dialog';
+import { SearchIcon } from 'lucide-react';
+import * as React from 'react';
 import {
   Autocomplete,
   AutocompleteCollection,
@@ -12,9 +15,6 @@ import {
   AutocompleteSeparator,
 } from '@/components/ui/autocomplete';
 import { cn } from '@/lib/utils';
-import { Dialog as CommandDialogPrimitive } from '@base-ui/react/dialog';
-import { SearchIcon } from 'lucide-react';
-import * as React from 'react';
 
 const CommandInputContext = React.createContext<{
   inputRef: React.RefObject<HTMLInputElement | null> | null;

@@ -1,15 +1,15 @@
-import { getXtermTheme, isTerminalThemeDark } from '@/lib/ghosttyTheme';
-import type { EditorTab } from '@/stores/editor';
-import { useSettingsStore } from '@/stores/settings';
 import Editor, { loader, type OnMount } from '@monaco-editor/react';
+import { FileCode } from 'lucide-react';
 import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
-import { FileCode } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
+import { getXtermTheme, isTerminalThemeDark } from '@/lib/ghosttyTheme';
+import type { EditorTab } from '@/stores/editor';
+import { useSettingsStore } from '@/stores/settings';
 import { EditorTabs } from './EditorTabs';
 
 // Configure Monaco workers for Electron environment
@@ -55,17 +55,17 @@ function defineMonacoTheme(terminalThemeName: string) {
       'editor.foreground': xtermTheme.foreground,
       'editor.selectionBackground': xtermTheme.selectionBackground,
       'editor.lineHighlightBackground': isDark
-        ? xtermTheme.brightBlack + '30'
-        : xtermTheme.black + '10',
+        ? `${xtermTheme.brightBlack}30`
+        : `${xtermTheme.black}10`,
       'editorCursor.foreground': xtermTheme.cursor,
       'editorLineNumber.foreground': xtermTheme.brightBlack,
       'editorLineNumber.activeForeground': xtermTheme.foreground,
       'editorIndentGuide.background': isDark
-        ? xtermTheme.brightBlack + '40'
-        : xtermTheme.black + '20',
+        ? `${xtermTheme.brightBlack}40`
+        : `${xtermTheme.black}20`,
       'editorIndentGuide.activeBackground': isDark
-        ? xtermTheme.brightBlack + '80'
-        : xtermTheme.black + '40',
+        ? `${xtermTheme.brightBlack}80`
+        : `${xtermTheme.black}40`,
     },
   });
 }
@@ -95,7 +95,7 @@ export function EditorArea({
 }: EditorAreaProps) {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
-  const { theme, terminalTheme } = useSettingsStore();
+  const { terminalTheme } = useSettingsStore();
   const themeDefinedRef = useRef(false);
 
   // Define custom theme on mount and when terminal theme changes

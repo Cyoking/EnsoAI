@@ -1,8 +1,8 @@
-import { Input } from '@/components/ui/input';
-import { Select, SelectItem, SelectPopup, SelectTrigger } from '@/components/ui/select';
 import type { WorkspaceRecord } from '@shared/types';
 import { ChevronDown, Folder, FolderOpen, Plus, Search } from 'lucide-react';
 import * as React from 'react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectItem, SelectPopup, SelectTrigger } from '@/components/ui/select';
 
 interface WorkspaceSelectorProps {
   workspaces: WorkspaceRecord[];

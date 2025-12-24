@@ -1,13 +1,8 @@
-import { exec } from "node:child_process";
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-import { promisify } from "node:util";
-import type {
-  AgentCliInfo,
-  AgentCliStatus,
-  BuiltinAgentId,
-  CustomAgent,
-} from "@shared/types";
+import { exec } from 'node:child_process';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
+import type { AgentCliInfo, AgentCliStatus, BuiltinAgentId, CustomAgent } from '@shared/types';
 
 const execAsync = promisify(exec);
 
@@ -21,38 +16,38 @@ interface BuiltinAgentConfig {
 
 const BUILTIN_AGENT_CONFIGS: BuiltinAgentConfig[] = [
   {
-    id: "claude",
-    name: "Claude",
-    command: "claude",
-    versionFlag: "--version",
+    id: 'claude',
+    name: 'Claude',
+    command: 'claude',
+    versionFlag: '--version',
     versionRegex: /(\d+\.\d+\.\d+)/,
   },
   {
-    id: "codex",
-    name: "Codex",
-    command: "codex",
-    versionFlag: "--version",
+    id: 'codex',
+    name: 'Codex',
+    command: 'codex',
+    versionFlag: '--version',
     versionRegex: /(\d+\.\d+\.\d+)/,
   },
   {
-    id: "droid",
-    name: "Droid",
-    command: "droid",
-    versionFlag: "--version",
+    id: 'droid',
+    name: 'Droid',
+    command: 'droid',
+    versionFlag: '--version',
     versionRegex: /(\d+\.\d+\.\d+)/,
   },
   {
-    id: "gemini",
-    name: "Gemini",
-    command: "gemini",
-    versionFlag: "--version",
+    id: 'gemini',
+    name: 'Gemini',
+    command: 'gemini',
+    versionFlag: '--version',
     versionRegex: /(\d+\.\d+\.\d+)/,
   },
   {
-    id: "auggie",
-    name: "Auggie",
-    command: "auggie",
-    versionFlag: "--version",
+    id: 'auggie',
+    name: 'Auggie',
+    command: 'auggie',
+    versionFlag: '--version',
     versionRegex: /(\d+\.\d+\.\d+)/,
   },
 ];
@@ -61,23 +56,23 @@ class CliDetector {
   private cachedStatus: AgentCliStatus | null = null;
 
   private getEnhancedPath(): string {
-    const home = process.env.HOME || "";
+    const home = process.env.HOME || '';
     const paths = [
-      process.env.PATH || "",
-      "/usr/local/bin",
-      "/opt/homebrew/bin",
+      process.env.PATH || '',
+      '/usr/local/bin',
+      '/opt/homebrew/bin',
       `${home}/.local/bin`,
       `${home}/.volta/bin`,
       ...this.getNvmNodeBins(home),
     ];
-    return paths.join(":");
+    return paths.join(':');
   }
 
   private getNvmNodeBins(home: string): string[] {
-    const nvmVersionsDir = join(home, ".nvm/versions/node");
+    const nvmVersionsDir = join(home, '.nvm/versions/node');
     try {
       const versions = readdirSync(nvmVersionsDir);
-      return versions.map((v) => join(nvmVersionsDir, v, "bin"));
+      return versions.map((v) => join(nvmVersionsDir, v, 'bin'));
     } catch {
       return [];
     }
@@ -85,16 +80,13 @@ class CliDetector {
 
   async detectBuiltin(config: BuiltinAgentConfig): Promise<AgentCliInfo> {
     try {
-      const { stdout } = await execAsync(
-        `${config.command} ${config.versionFlag}`,
-        {
-          timeout: 5000,
-          env: {
-            ...process.env,
-            PATH: this.getEnhancedPath(),
-          },
-        }
-      );
+      const { stdout } = await execAsync(`${config.command} ${config.versionFlag}`, {
+        timeout: 5000,
+        env: {
+          ...process.env,
+          PATH: this.getEnhancedPath(),
+        },
+      });
 
       let version: string | undefined;
       if (config.versionRegex) {
@@ -171,12 +163,8 @@ class CliDetector {
   }
 
   async detectAll(customAgents: CustomAgent[] = []): Promise<AgentCliStatus> {
-    const builtinPromises = BUILTIN_AGENT_CONFIGS.map((config) =>
-      this.detectBuiltin(config)
-    );
-    const customPromises = customAgents.map((agent) =>
-      this.detectCustom(agent)
-    );
+    const builtinPromises = BUILTIN_AGENT_CONFIGS.map((config) => this.detectBuiltin(config));
+    const customPromises = customAgents.map((agent) => this.detectCustom(agent));
 
     const agents = await Promise.all([...builtinPromises, ...customPromises]);
 

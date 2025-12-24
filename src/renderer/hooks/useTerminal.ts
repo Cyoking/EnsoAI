@@ -1,6 +1,6 @@
-import { useTerminalStore } from '@/stores/terminal';
 import type { TerminalCreateOptions } from '@shared/types';
 import { useCallback, useEffect } from 'react';
+import { useTerminalStore } from '@/stores/terminal';
 
 export function useTerminal() {
   const { sessions, activeSessionId, addSession, removeSession, setActiveSession } =

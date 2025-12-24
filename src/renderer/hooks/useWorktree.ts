@@ -1,6 +1,6 @@
-import { useWorktreeStore } from '@/stores/worktree';
 import type { WorktreeCreateOptions, WorktreeRemoveOptions } from '@shared/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useWorktreeStore } from '@/stores/worktree';
 
 export function useWorktreeList(workdir: string | null) {
   const setWorktrees = useWorktreeStore((s) => s.setWorktrees);

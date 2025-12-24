@@ -1,12 +1,4 @@
 import {
-  CommandDialog,
-  CommandDialogPopup,
-  CommandPanel,
-  CommandShortcut,
-} from '@/components/ui/command';
-import { useDetectedApps, useOpenWith } from '@/hooks/useAppDetector';
-import { cn } from '@/lib/utils';
-import {
   ExternalLink,
   FolderOpen,
   GitBranch,
@@ -16,6 +8,14 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useRef } from 'react';
+import {
+  CommandDialog,
+  CommandDialogPopup,
+  CommandPanel,
+  CommandShortcut,
+} from '@/components/ui/command';
+import { useDetectedApps, useOpenWith } from '@/hooks/useAppDetector';
+import { cn } from '@/lib/utils';
 
 interface ActionPanelProps {
   open: boolean;

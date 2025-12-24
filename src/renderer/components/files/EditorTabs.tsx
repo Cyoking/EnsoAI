@@ -1,8 +1,8 @@
-import { ScrollArea } from '@/components/ui/scroll-area';
-import type { EditorTab } from '@/stores/editor';
-import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 import { useCallback, useRef } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import type { EditorTab } from '@/stores/editor';
 import { getFileIcon, getFileIconColor } from './fileIcons';
 
 interface EditorTabsProps {
@@ -77,9 +77,7 @@ export function EditorTabs({
                 )}
               >
                 {/* Active indicator */}
-                {isActive && (
-                  <div className="absolute inset-x-0 top-0 h-[2px] bg-primary" />
-                )}
+                {isActive && <div className="absolute inset-x-0 top-0 h-[2px] bg-primary" />}
 
                 {/* Icon */}
                 <Icon className={cn('h-4 w-4 shrink-0', iconColor)} />

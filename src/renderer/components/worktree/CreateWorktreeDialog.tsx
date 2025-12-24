@@ -1,3 +1,6 @@
+import type { GitBranch as GitBranchType, WorktreeCreateOptions } from '@shared/types';
+import { GitBranch, Plus } from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,9 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { GitBranch as GitBranchType, WorktreeCreateOptions } from '@shared/types';
-import { GitBranch, Plus } from 'lucide-react';
-import * as React from 'react';
 
 interface CreateWorktreeDialogProps {
   branches: GitBranchType[];

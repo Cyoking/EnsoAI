@@ -1,3 +1,20 @@
+import type { AgentCliInfo, BuiltinAgentId, CustomAgent } from '@shared/types';
+import {
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  Monitor,
+  Moon,
+  Palette,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Settings,
+  Sun,
+  Terminal,
+  Trash2,
+} from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Combobox,
@@ -17,30 +34,13 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
-  type XtermTheme,
   defaultDarkTheme,
   getThemeNames,
   getXtermTheme,
+  type XtermTheme,
 } from '@/lib/ghosttyTheme';
 import { cn } from '@/lib/utils';
 import { type FontWeight, type Theme, useSettingsStore } from '@/stores/settings';
-import type { AgentCliInfo, BuiltinAgentId, CustomAgent } from '@shared/types';
-import {
-  Bot,
-  ChevronLeft,
-  ChevronRight,
-  Monitor,
-  Moon,
-  Palette,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Settings,
-  Sun,
-  Terminal,
-  Trash2,
-} from 'lucide-react';
-import * as React from 'react';
 
 type SettingsCategory = 'appearance' | 'agent';
 
@@ -738,10 +738,7 @@ function AgentSettings() {
         <DialogPopup className="sm:max-w-sm" showCloseButton={false}>
           <div className="p-4">
             <DialogTitle className="text-base font-medium">添加自定义 Agent</DialogTitle>
-            <AgentForm
-              onSubmit={handleAddAgent}
-              onCancel={() => setIsAddingAgent(false)}
-            />
+            <AgentForm onSubmit={handleAddAgent} onCancel={() => setIsAddingAgent(false)} />
           </div>
         </DialogPopup>
       </Dialog>

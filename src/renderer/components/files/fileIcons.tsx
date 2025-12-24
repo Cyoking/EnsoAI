@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import {
   Braces,
   Code,
@@ -13,7 +14,6 @@ import {
   Settings,
   Terminal,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 
 const fileIconMap: Record<string, LucideIcon> = {
   // JavaScript/TypeScript
@@ -67,7 +67,7 @@ const specialFileIconMap: Record<string, LucideIcon> = {
   '.gitignore': Settings,
   '.env': Settings,
   '.env.local': Settings,
-  'dockerfile': Terminal,
+  dockerfile: Terminal,
   'docker-compose.yml': Settings,
   'readme.md': FileText,
 };

@@ -1,8 +1,8 @@
+import { FileEdit, FilePlus, FileQuestion, FileX, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { FileEdit, FilePlus, FileQuestion, FileX, Minus, Plus } from 'lucide-react';
 
 type FileStatus = 'M' | 'A' | 'D' | 'R' | 'C' | 'U' | '?';
 

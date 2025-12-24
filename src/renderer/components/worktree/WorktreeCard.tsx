@@ -1,7 +1,3 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from '@/components/ui/menu';
-import { cn } from '@/lib/utils';
 import type { GitStatus, GitWorktree } from '@shared/types';
 import {
   Copy,
@@ -13,6 +9,10 @@ import {
   Terminal,
   Trash2,
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from '@/components/ui/menu';
+import { cn } from '@/lib/utils';
 
 interface WorktreeCardProps {
   worktree: GitWorktree;

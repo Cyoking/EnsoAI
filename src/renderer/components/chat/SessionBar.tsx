@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils';
-import { BUILTIN_AGENT_IDS, useSettingsStore } from '@/stores/settings';
 import { GripVertical, Plus, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { BUILTIN_AGENT_IDS, useSettingsStore } from '@/stores/settings';
 
 const STORAGE_KEY = 'enso-session-bar';
 const EDGE_THRESHOLD = 20; // pixels from edge

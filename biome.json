@@ -1,8 +1,6 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
@@ -16,6 +14,10 @@
       },
       "suspicious": {
         "noExplicitAny": "off"
+      },
+      "a11y": {
+        "noStaticElementInteractions": "off",
+        "useSemanticElements": "off"
       }
     }
   },
@@ -32,7 +34,18 @@
       "trailingCommas": "es5"
     }
   },
+  "css": {
+    "parser": {
+      "cssModules": true
+    },
+    "linter": {
+      "enabled": false
+    },
+    "formatter": {
+      "enabled": false
+    }
+  },
   "files": {
-    "ignore": ["node_modules", "out", "dist", "*.min.js"]
+    "includes": ["**", "!**/node_modules", "!**/out", "!**/dist", "!**/*.min.js", "!**/*.css"]
   }
 }

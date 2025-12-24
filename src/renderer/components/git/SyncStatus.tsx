@@ -1,6 +1,6 @@
+import { ArrowDown, ArrowUp, CloudOff, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, CloudOff, RefreshCw } from 'lucide-react';
 
 interface SyncStatusProps {
   ahead: number;

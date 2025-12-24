@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface SearchOptions {
   caseSensitive?: boolean;

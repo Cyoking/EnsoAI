@@ -1,6 +1,6 @@
-import { useAgentStore } from '@/stores/agent';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { useAgentStore } from '@/stores/agent';
 
 export function useAgentList() {
   const setAgents = useAgentStore((s) => s.setAgents);

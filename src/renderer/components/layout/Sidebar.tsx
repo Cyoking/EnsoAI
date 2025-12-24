@@ -1,8 +1,8 @@
+import type { WorkspaceRecord } from '@shared/types';
 import { Separator } from '@/components/ui/separator';
 import { WorkspaceSelector } from '@/components/workspace';
 import { cn } from '@/lib/utils';
 import { useWorkspaceStore } from '@/stores/workspace';
-import type { WorkspaceRecord } from '@shared/types';
 import { FolderIcon, GitBranchIcon, GitCommitIcon, MessageSquareIcon, SettingsIcon } from './Icons';
 
 type TabId = 'worktrees' | 'chat' | 'files' | 'git' | 'settings';

@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils';
 import { List, Plus, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { ShellTerminal } from './ShellTerminal';
 
 interface TerminalTab {
@@ -49,17 +49,17 @@ export function TerminalPanel({ cwd, isActive = false }: TerminalPanelProps) {
   }, [cwd]);
 
   // Stable terminal IDs - only append, never reorder (prevents DOM reordering issues with xterm)
-  const [terminalIds, setTerminalIds] = useState<string[]>(() => tabs.map(t => t.id));
+  const [terminalIds, setTerminalIds] = useState<string[]>(() => tabs.map((t) => t.id));
 
   // Update stable terminal IDs when tabs change (append new, remove deleted)
   useEffect(() => {
-    setTerminalIds(prev => {
+    setTerminalIds((prev) => {
       const currentIds = new Set(prev);
-      const tabIds = new Set(tabs.map(t => t.id));
+      const tabIds = new Set(tabs.map((t) => t.id));
       // Append new tabs (preserve creation order)
-      const newIds = tabs.filter(t => !currentIds.has(t.id)).map(t => t.id);
+      const newIds = tabs.filter((t) => !currentIds.has(t.id)).map((t) => t.id);
       // Filter out deleted tabs
-      const filtered = prev.filter(id => tabIds.has(id));
+      const filtered = prev.filter((id) => tabIds.has(id));
       return newIds.length > 0 ? [...filtered, ...newIds] : filtered;
     });
   }, [tabs]);
@@ -136,9 +136,7 @@ export function TerminalPanel({ cwd, isActive = false }: TerminalPanelProps) {
     if (editingId && editingName.trim()) {
       setState((prev) => ({
         ...prev,
-        tabs: prev.tabs.map((t) =>
-          t.id === editingId ? { ...t, name: editingName.trim() } : t
-        ),
+        tabs: prev.tabs.map((t) => (t.id === editingId ? { ...t, name: editingName.trim() } : t)),
       }));
     }
     setEditingId(null);
@@ -176,49 +174,52 @@ export function TerminalPanel({ cwd, isActive = false }: TerminalPanelProps) {
     }
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, tabId: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (draggedId && tabId !== draggedId) {
-      setDropTargetId(tabId);
-    }
-  }, [draggedId]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, tabId: string) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (draggedId && tabId !== draggedId) {
+        setDropTargetId(tabId);
+      }
+    },
+    [draggedId]
+  );
 
   const handleDragLeave = useCallback(() => {
     setDropTargetId(null);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (!draggedId || draggedId === targetId) {
+  const handleDrop = useCallback(
+    (e: React.DragEvent, targetId: string) => {
+      e.preventDefault();
+      if (!draggedId || draggedId === targetId) {
+        setDraggedId(null);
+        setDropTargetId(null);
+        return;
+      }
+
+      setState((prev) => {
+        const draggedIndex = prev.tabs.findIndex((t) => t.id === draggedId);
+        const targetIndex = prev.tabs.findIndex((t) => t.id === targetId);
+        if (draggedIndex === -1 || targetIndex === -1) return prev;
+
+        const newTabs = [...prev.tabs];
+        const [removed] = newTabs.splice(draggedIndex, 1);
+        newTabs.splice(targetIndex, 0, removed);
+        return { ...prev, tabs: newTabs };
+      });
+
       setDraggedId(null);
       setDropTargetId(null);
-      return;
-    }
-
-    setState((prev) => {
-      const draggedIndex = prev.tabs.findIndex((t) => t.id === draggedId);
-      const targetIndex = prev.tabs.findIndex((t) => t.id === targetId);
-      if (draggedIndex === -1 || targetIndex === -1) return prev;
-
-      const newTabs = [...prev.tabs];
-      const [removed] = newTabs.splice(draggedIndex, 1);
-      newTabs.splice(targetIndex, 0, removed);
-      return { ...prev, tabs: newTabs };
-    });
-
-    setDraggedId(null);
-    setDropTargetId(null);
-  }, [draggedId]);
+    },
+    [draggedId]
+  );
 
   return (
     <div className="flex h-full w-full flex-col">
       {/* Tab Bar */}
       <div className="flex h-9 items-center border-b border-border bg-background/50 backdrop-blur-sm">
-        <div
-          className="flex flex-1 items-center overflow-x-auto"
-          onDoubleClick={handleNewTab}
-        >
+        <div className="flex flex-1 items-center overflow-x-auto" onDoubleClick={handleNewTab}>
           {tabs.map((tab) => {
             const isActive = activeId === tab.id;
             const isDragging = draggedId === tab.id;
@@ -278,9 +279,7 @@ export function TerminalPanel({ cwd, isActive = false }: TerminalPanelProps) {
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
-                {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-                )}
+                {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
               </div>
             );
           })}
@@ -304,15 +303,8 @@ export function TerminalPanel({ cwd, isActive = false }: TerminalPanelProps) {
         {terminalIds.map((id) => {
           const isActive = activeId === id;
           return (
-            <div
-              key={id}
-              className={isActive ? 'h-full w-full' : 'invisible absolute inset-0'}
-            >
-              <ShellTerminal
-                cwd={cwd}
-                isActive={isActive}
-                onExit={() => handleCloseTab(id)}
-              />
+            <div key={id} className={isActive ? 'h-full w-full' : 'invisible absolute inset-0'}>
+              <ShellTerminal cwd={cwd} isActive={isActive} onExit={() => handleCloseTab(id)} />
             </div>
           );
         })}

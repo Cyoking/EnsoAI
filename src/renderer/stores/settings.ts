@@ -1,11 +1,11 @@
+import type { BuiltinAgentId, CustomAgent } from '@shared/types';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import {
   applyTerminalThemeToApp,
   clearTerminalThemeFromApp,
   isTerminalThemeDark,
 } from '@/lib/ghosttyTheme';
-import type { BuiltinAgentId, CustomAgent } from '@shared/types';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
 
 // Custom storage using Electron IPC to persist settings to JSON file
 const electronStorage = {

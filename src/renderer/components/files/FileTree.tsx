@@ -1,15 +1,19 @@
-import { Input } from '@/components/ui/input';
 import {
-  Menu,
-  MenuItem,
-  MenuPopup,
-  MenuSeparator,
-} from '@/components/ui/menu';
+  ChevronRight,
+  Copy,
+  FilePlus,
+  FolderPlus,
+  Loader2,
+  Pencil,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Menu, MenuItem, MenuPopup, MenuSeparator } from '@/components/ui/menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { FileTreeNode } from '@/hooks/useFileTree';
 import { cn } from '@/lib/utils';
-import { ChevronRight, Copy, FilePlus, FolderPlus, Loader2, Pencil, RefreshCw, Trash2 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
 import { getFileIcon, getFileIconColor } from './fileIcons';
 
 interface FileTreeProps {

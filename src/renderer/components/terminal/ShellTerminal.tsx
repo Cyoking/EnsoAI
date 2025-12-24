@@ -1,5 +1,5 @@
-import { useXterm } from '@/hooks/useXterm';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useXterm } from '@/hooks/useXterm';
 import { TerminalSearchBar, type TerminalSearchBarRef } from './TerminalSearchBar';
 
 interface ShellTerminalProps {
@@ -18,16 +18,19 @@ export function ShellTerminal({ cwd, isActive = false, onExit }: ShellTerminalPr
   const searchBarRef = useRef<TerminalSearchBarRef>(null);
 
   // Handle Cmd+F / Ctrl+F
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-      e.preventDefault();
-      if (isSearchOpen) {
-        searchBarRef.current?.focus();
-      } else {
-        setIsSearchOpen(true);
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        if (isSearchOpen) {
+          searchBarRef.current?.focus();
+        } else {
+          setIsSearchOpen(true);
+        }
       }
-    }
-  }, [isSearchOpen]);
+    },
+    [isSearchOpen]
+  );
 
   useEffect(() => {
     if (!isActive) return;

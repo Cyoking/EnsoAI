@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { GitLogEntry } from '@shared/types';
 import { ChevronRight, GitCommit } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CommitHistoryProps {
   commits: GitLogEntry[];

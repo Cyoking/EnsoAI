@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '@shared/types';
-import { BrowserWindow, Menu, MenuItem, dialog, ipcMain } from 'electron';
+import { BrowserWindow, dialog, ipcMain, Menu, MenuItem } from 'electron';
 
 interface ContextMenuItem {
   label: string;

@@ -1,8 +1,8 @@
 import { electronApp, optimizer } from '@electron-toolkit/utils';
-import { BrowserWindow, Menu, app } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import { registerIpcHandlers } from './ipc';
-import { buildAppMenu } from './services/MenuBuilder';
 import { checkGitInstalled } from './services/git/checkGit';
+import { buildAppMenu } from './services/MenuBuilder';
 import { createMainWindow } from './windows/MainWindow';
 
 let mainWindow: BrowserWindow | null = null;

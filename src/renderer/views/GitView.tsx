@@ -1,3 +1,5 @@
+import { GitBranch, RefreshCw } from 'lucide-react';
+import * as React from 'react';
 import {
   BranchSelector,
   CommitForm,
@@ -19,8 +21,6 @@ import {
 } from '@/hooks/useGit';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useWorktreeStore } from '@/stores/worktree';
-import { GitBranch, RefreshCw } from 'lucide-react';
-import * as React from 'react';
 
 export function GitView() {
   const { currentWorkspace } = useWorkspaceStore();

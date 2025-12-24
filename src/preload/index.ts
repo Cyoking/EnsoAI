@@ -1,5 +1,3 @@
-import { IPC_CHANNELS } from '@shared/types';
-import { shell } from 'electron';
 import type {
   AgentCliInfo,
   AgentCliStatus,
@@ -18,7 +16,8 @@ import type {
   WorktreeCreateOptions,
   WorktreeRemoveOptions,
 } from '@shared/types';
-import { contextBridge, ipcRenderer } from 'electron';
+import { IPC_CHANNELS } from '@shared/types';
+import { contextBridge, ipcRenderer, shell } from 'electron';
 
 const electronAPI = {
   // Git
