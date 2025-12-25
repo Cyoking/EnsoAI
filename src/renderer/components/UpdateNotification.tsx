@@ -1,4 +1,4 @@
-import { Download, RefreshCw } from 'lucide-react';
+import { Download, ExternalLink, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import {
@@ -23,6 +23,7 @@ interface UpdateStatus {
     transferred: number;
   };
   error?: string;
+  downloadUrl?: string; // For macOS manual update
 }
 
 export function UpdateNotification() {
@@ -33,8 +34,13 @@ export function UpdateNotification() {
     const cleanup = window.electronAPI.updater.onStatus((newStatus) => {
       setStatus(newStatus as UpdateStatus);
 
-      // Auto-open dialog when update is downloaded
-      if (newStatus.status === 'downloaded') {
+      // Auto-open dialog when:
+      // - Update downloaded (Windows)
+      // - Update available with downloadUrl (macOS)
+      if (
+        newStatus.status === 'downloaded' ||
+        (newStatus.status === 'available' && (newStatus as UpdateStatus).downloadUrl)
+      ) {
         setDialogOpen(true);
       }
     });
@@ -45,6 +51,13 @@ export function UpdateNotification() {
   const handleInstall = useCallback(() => {
     window.electronAPI.updater.quitAndInstall();
   }, []);
+
+  const handleOpenDownload = useCallback(() => {
+    if (status?.downloadUrl) {
+      window.electronAPI.shell.openExternal(status.downloadUrl);
+      setDialogOpen(false);
+    }
+  }, [status?.downloadUrl]);
 
   const handleLater = useCallback(() => {
     setDialogOpen(false);
@@ -57,7 +70,7 @@ export function UpdateNotification() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Show downloading indicator in corner
+  // Show downloading indicator in corner (Windows only)
   if (status?.status === 'downloading' && status.progress) {
     return (
       <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-lg border bg-background/95 px-3 py-2 shadow-lg backdrop-blur">
@@ -80,24 +93,44 @@ export function UpdateNotification() {
     );
   }
 
+  // macOS: manual download dialog
+  const isMacOSManual = status?.status === 'available' && status.downloadUrl;
+
+  // Windows: auto-install dialog
+  const isWindowsReady = status?.status === 'downloaded';
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogPopup className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5 text-primary" />
-            更新已就绪
+            {isMacOSManual ? (
+              <Download className="h-5 w-5 text-primary" />
+            ) : (
+              <RefreshCw className="h-5 w-5 text-primary" />
+            )}
+            {isMacOSManual ? '发现新版本' : '更新已就绪'}
           </DialogTitle>
           <DialogDescription>
-            新版本 {(status?.info as UpdateStatus['info'])?.version || ''}{' '}
-            已下载完成，是否立即重启安装？
+            {isMacOSManual ? (
+              <>新版本 {status?.info?.version || ''} 已发布，请前往下载页面手动更新。</>
+            ) : (
+              <>新版本 {status?.info?.version || ''} 已下载完成，是否立即重启安装？</>
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter variant="bare">
           <Button variant="outline" onClick={handleLater}>
             稍后
           </Button>
-          <Button onClick={handleInstall}>立即重启</Button>
+          {isMacOSManual ? (
+            <Button onClick={handleOpenDownload}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              前往下载
+            </Button>
+          ) : (
+            <Button onClick={handleInstall}>立即重启</Button>
+          )}
         </DialogFooter>
       </DialogPopup>
     </Dialog>

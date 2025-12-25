@@ -4,6 +4,9 @@ import electronUpdater, { type UpdateInfo } from 'electron-updater';
 
 const { autoUpdater } = electronUpdater;
 
+// macOS without code signing cannot use Squirrel.Mac auto-install
+const isMacOS = process.platform === 'darwin';
+
 export interface UpdateStatus {
   status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
   info?: UpdateInfo;
@@ -14,6 +17,8 @@ export interface UpdateStatus {
     transferred: number;
   };
   error?: string;
+  // For macOS manual update
+  downloadUrl?: string;
 }
 
 class AutoUpdaterService {
@@ -24,8 +29,10 @@ class AutoUpdaterService {
     this.mainWindow = window;
 
     // Configure auto-updater
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
+    // macOS: disable auto-download (no code signing = can't auto-install)
+    // Windows: enable auto-download
+    autoUpdater.autoDownload = !isMacOS;
+    autoUpdater.autoInstallOnAppQuit = !isMacOS;
 
     // Enable logging in dev mode
     if (is.dev) {
@@ -38,7 +45,11 @@ class AutoUpdaterService {
     });
 
     autoUpdater.on('update-available', (info) => {
-      this.sendStatus({ status: 'available', info });
+      // On macOS, provide download URL for manual update
+      const downloadUrl = isMacOS
+        ? `https://github.com/J3n5en/EnsoAI/releases/tag/v${info.version}`
+        : undefined;
+      this.sendStatus({ status: 'available', info, downloadUrl });
     });
 
     autoUpdater.on('update-not-available', (info) => {
