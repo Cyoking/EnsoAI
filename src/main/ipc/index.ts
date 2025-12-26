@@ -1,3 +1,4 @@
+import { disposeClaudeIdeBridge } from '../services/claude/ClaudeIdeBridge';
 import { registerAgentHandlers, stopAllAgentSessions } from './agent';
 import { registerAppHandlers } from './app';
 import { registerCliHandlers } from './cli';
@@ -37,4 +38,7 @@ export async function cleanupAllResources(): Promise<void> {
   // Clear service caches
   clearAllGitServices();
   clearAllWorktreeServices();
+
+  // Dispose Claude IDE Bridge
+  disposeClaudeIdeBridge();
 }

@@ -14,6 +14,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
+import { toastManager } from '@/components/ui/toast';
 import { useI18n } from '@/i18n';
 import { getXtermTheme, isTerminalThemeDark } from '@/lib/ghosttyTheme';
 import type { EditorTab, PendingCursor } from '@/stores/editor';
@@ -147,8 +148,9 @@ export function EditorArea({
   const { t } = useI18n();
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
-  const { terminalTheme, editorSettings } = useSettingsStore();
+  const { terminalTheme, editorSettings, claudeCodeIntegration } = useSettingsStore();
   const themeDefinedRef = useRef(false);
+  const selectionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Define custom theme on mount and when terminal theme changes
   useEffect(() => {
@@ -174,24 +176,143 @@ export function EditorArea({
     onClearPendingCursor();
   }, [pendingCursor, activeTabPath, onClearPendingCursor]);
 
+  // Build keybinding for Monaco from settings
+  const buildAtMentionedKeybinding = useCallback(
+    (m: typeof monaco) => {
+      const kb = claudeCodeIntegration.atMentionedKeybinding;
+      let keyCode = 0;
+
+      // Convert key to Monaco KeyCode
+      const keyMap: Record<string, number> = {
+        a: m.KeyCode.KeyA,
+        b: m.KeyCode.KeyB,
+        c: m.KeyCode.KeyC,
+        d: m.KeyCode.KeyD,
+        e: m.KeyCode.KeyE,
+        f: m.KeyCode.KeyF,
+        g: m.KeyCode.KeyG,
+        h: m.KeyCode.KeyH,
+        i: m.KeyCode.KeyI,
+        j: m.KeyCode.KeyJ,
+        k: m.KeyCode.KeyK,
+        l: m.KeyCode.KeyL,
+        m: m.KeyCode.KeyM,
+        n: m.KeyCode.KeyN,
+        o: m.KeyCode.KeyO,
+        p: m.KeyCode.KeyP,
+        q: m.KeyCode.KeyQ,
+        r: m.KeyCode.KeyR,
+        s: m.KeyCode.KeyS,
+        t: m.KeyCode.KeyT,
+        u: m.KeyCode.KeyU,
+        v: m.KeyCode.KeyV,
+        w: m.KeyCode.KeyW,
+        x: m.KeyCode.KeyX,
+        y: m.KeyCode.KeyY,
+        z: m.KeyCode.KeyZ,
+      };
+      keyCode = keyMap[kb.key.toLowerCase()] || m.KeyCode.KeyM;
+
+      // Apply modifiers
+      if (kb.ctrl) keyCode |= m.KeyMod.CtrlCmd;
+      if (kb.meta) keyCode |= m.KeyMod.CtrlCmd;
+      if (kb.shift) keyCode |= m.KeyMod.Shift;
+      if (kb.alt) keyCode |= m.KeyMod.Alt;
+
+      return keyCode;
+    },
+    [claudeCodeIntegration.atMentionedKeybinding]
+  );
+
   const handleEditorMount: OnMount = useCallback(
-    (editor, monaco) => {
+    (editor, m) => {
       editorRef.current = editor;
-      monacoRef.current = monaco;
+      monacoRef.current = m;
 
       // Add Cmd/Ctrl+S shortcut
-      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.KeyS, () => {
         if (activeTabPath) {
           onSave(activeTabPath);
         }
       });
 
+      // Add configurable shortcut to mention selection in Claude
+      if (claudeCodeIntegration.enabled) {
+        editor.addCommand(buildAtMentionedKeybinding(m), () => {
+          if (!activeTabPath) return;
+          const selection = editor.getSelection();
+          if (!selection) return;
+
+          const lineCount = selection.endLineNumber - selection.startLineNumber + 1;
+          const fileName = activeTabPath.split('/').pop() || activeTabPath;
+
+          window.electronAPI.mcp.sendAtMentioned({
+            filePath: activeTabPath,
+            lineStart: selection.startLineNumber,
+            lineEnd: selection.endLineNumber,
+          });
+
+          toastManager.add({
+            type: 'success',
+            timeout: 500,
+            title: t('Sent to Claude Code'),
+            description: `${fileName}:${selection.startLineNumber}-${selection.endLineNumber} (${lineCount} ${t('lines')})`,
+          });
+        });
+      }
+
       // Restore view state if available
       if (activeTab?.viewState) {
         editor.restoreViewState(activeTab.viewState as monaco.editor.ICodeEditorViewState);
       }
+
+      // Selection change listener for Claude IDE Bridge (only when enabled)
+      if (claudeCodeIntegration.enabled) {
+        editor.onDidChangeCursorSelection((e) => {
+          if (!activeTabPath) return;
+
+          // Clear previous debounce timer
+          if (selectionDebounceRef.current) {
+            clearTimeout(selectionDebounceRef.current);
+          }
+
+          // Debounce selection notifications using settings value
+          selectionDebounceRef.current = setTimeout(() => {
+            const model = editor.getModel();
+            if (!model) return;
+
+            const selection = e.selection;
+            const selectedText = model.getValueInRange(selection);
+
+            window.electronAPI.mcp.sendSelectionChanged({
+              text: selectedText,
+              filePath: activeTabPath,
+              fileUrl: `file://${activeTabPath}`,
+              selection: {
+                start: {
+                  line: selection.startLineNumber,
+                  character: selection.startColumn,
+                },
+                end: {
+                  line: selection.endLineNumber,
+                  character: selection.endColumn,
+                },
+                isEmpty: selection.isEmpty(),
+              },
+            });
+          }, claudeCodeIntegration.selectionChangedDebounce);
+        });
+      }
     },
-    [activeTab?.viewState, activeTabPath, onSave]
+    [
+      activeTab?.viewState,
+      activeTabPath,
+      onSave,
+      claudeCodeIntegration.enabled,
+      claudeCodeIntegration.selectionChangedDebounce,
+      buildAtMentionedKeybinding,
+      t,
+    ]
   );
 
   const handleEditorChange = useCallback(

@@ -5,6 +5,7 @@ import { type Locale, normalizeLocale } from '@shared/i18n';
 import { IPC_CHANNELS } from '@shared/types';
 import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import { cleanupAllResources, registerIpcHandlers } from './ipc';
+import { registerClaudeBridgeIpcHandlers } from './services/claude/ClaudeIdeBridge';
 import { checkGitInstalled } from './services/git/checkGit';
 import { setCurrentLocale } from './services/i18n';
 import { buildAppMenu } from './services/MenuBuilder';
@@ -157,6 +158,9 @@ async function init(): Promise<void> {
 
   // Register IPC handlers
   registerIpcHandlers();
+
+  // Register Claude IDE Bridge IPC handlers (bridge starts when enabled in settings)
+  registerClaudeBridgeIpcHandlers();
 }
 
 app.whenReady().then(async () => {

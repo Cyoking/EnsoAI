@@ -144,6 +144,19 @@ export interface SourceControlKeybindings {
   nextDiff: TerminalKeybinding;
 }
 
+// Claude Code integration settings
+export interface ClaudeCodeIntegrationSettings {
+  enabled: boolean;
+  selectionChangedDebounce: number; // in milliseconds
+  atMentionedKeybinding: TerminalKeybinding;
+}
+
+export const defaultClaudeCodeIntegrationSettings: ClaudeCodeIntegrationSettings = {
+  enabled: false,
+  selectionChangedDebounce: 300,
+  atMentionedKeybinding: { key: 'm', meta: true, shift: true }, // Cmd/Ctrl+Shift+M
+};
+
 // Editor settings
 export type EditorLineNumbers = 'on' | 'off' | 'relative';
 export type EditorWordWrap = 'on' | 'off' | 'wordWrapColumn' | 'bounded';
@@ -267,6 +280,7 @@ interface SettingsState {
   wslEnabled: boolean;
   agentNotificationEnabled: boolean;
   agentNotificationDelay: number; // in seconds
+  claudeCodeIntegration: ClaudeCodeIntegrationSettings;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (language: Locale) => void;
@@ -293,6 +307,7 @@ interface SettingsState {
   setWslEnabled: (enabled: boolean) => void;
   setAgentNotificationEnabled: (enabled: boolean) => void;
   setAgentNotificationDelay: (delay: number) => void;
+  setClaudeCodeIntegration: (settings: Partial<ClaudeCodeIntegrationSettings>) => void;
 }
 
 const defaultAgentSettings: AgentSettings = {
@@ -331,6 +346,7 @@ export const useSettingsStore = create<SettingsState>()(
       wslEnabled: false,
       agentNotificationEnabled: true,
       agentNotificationDelay: 3, // 3 seconds
+      claudeCodeIntegration: defaultClaudeCodeIntegrationSettings,
 
       setTheme: (theme) => {
         const terminalTheme = get().terminalTheme;
@@ -431,6 +447,10 @@ export const useSettingsStore = create<SettingsState>()(
       setWslEnabled: (wslEnabled) => set({ wslEnabled }),
       setAgentNotificationEnabled: (agentNotificationEnabled) => set({ agentNotificationEnabled }),
       setAgentNotificationDelay: (agentNotificationDelay) => set({ agentNotificationDelay }),
+      setClaudeCodeIntegration: (settings) =>
+        set((state) => ({
+          claudeCodeIntegration: { ...state.claudeCodeIntegration, ...settings },
+        })),
     }),
     {
       name: 'enso-settings',

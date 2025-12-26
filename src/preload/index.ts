@@ -79,6 +79,8 @@ const electronAPI = {
       ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_ADD, workdir, options),
     remove: (workdir: string, options: WorktreeRemoveOptions): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_REMOVE, workdir, options),
+    activate: (worktreePaths: string[]): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.WORKTREE_ACTIVATE, worktreePaths),
   },
 
   // Files
@@ -303,6 +305,29 @@ const electronAPI = {
       ) => callback(status);
       ipcRenderer.on(IPC_CHANNELS.UPDATER_STATUS, handler);
       return () => ipcRenderer.off(IPC_CHANNELS.UPDATER_STATUS, handler);
+    },
+  },
+
+  // MCP (Claude IDE Bridge)
+  mcp: {
+    setEnabled: (enabled: boolean, workspaceFolders?: string[]): Promise<boolean> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_BRIDGE_SET_ENABLED, enabled, workspaceFolders),
+    getStatus: (): Promise<{ enabled: boolean; port: number | null }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_BRIDGE_GET_STATUS),
+    sendSelectionChanged: (params: {
+      text: string;
+      filePath: string;
+      fileUrl: string;
+      selection: {
+        start: { line: number; character: number };
+        end: { line: number; character: number };
+        isEmpty: boolean;
+      };
+    }): void => {
+      ipcRenderer.send(IPC_CHANNELS.MCP_SELECTION_CHANGED, params);
+    },
+    sendAtMentioned: (params: { filePath: string; lineStart: number; lineEnd: number }): void => {
+      ipcRenderer.send(IPC_CHANNELS.MCP_AT_MENTIONED, params);
     },
   },
 };

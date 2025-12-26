@@ -6,6 +6,7 @@ import {
   ChevronRight,
   FileCode,
   Keyboard,
+  Link,
   Monitor,
   Moon,
   Palette,
@@ -63,7 +64,13 @@ import {
   useSettingsStore,
 } from '@/stores/settings';
 
-type SettingsCategory = 'general' | 'appearance' | 'editor' | 'keybindings' | 'agent';
+type SettingsCategory =
+  | 'general'
+  | 'appearance'
+  | 'editor'
+  | 'keybindings'
+  | 'agent'
+  | 'integration';
 
 interface SettingsDialogProps {
   trigger?: React.ReactElement;
@@ -81,6 +88,7 @@ export function SettingsDialog({ trigger, open, onOpenChange }: SettingsDialogPr
     { id: 'editor', icon: FileCode, label: t('Editor') },
     { id: 'keybindings', icon: Keyboard, label: t('Keybindings') },
     { id: 'agent', icon: Bot, label: t('Agent') },
+    { id: 'integration', icon: Link, label: t('Integration') },
   ];
 
   // Controlled mode (open prop provided) doesn't need trigger
@@ -150,6 +158,7 @@ export function SettingsDialog({ trigger, open, onOpenChange }: SettingsDialogPr
             {activeCategory === 'editor' && <EditorSettingsPanel />}
             {activeCategory === 'keybindings' && <KeybindingsSettings />}
             {activeCategory === 'agent' && <AgentSettings />}
+            {activeCategory === 'integration' && <IntegrationSettings />}
           </div>
         </div>
       </DialogPopup>
@@ -2045,5 +2054,103 @@ function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+function IntegrationSettings() {
+  const { t } = useI18n();
+  const { claudeCodeIntegration, setClaudeCodeIntegration } = useSettingsStore();
+  const [bridgePort, setBridgePort] = React.useState<number | null>(null);
+
+  const debounceOptions = React.useMemo(
+    () =>
+      [100, 200, 300, 500, 1000].map((value) => ({
+        value,
+        label: `${value}ms`,
+      })),
+    []
+  );
+
+  // Fetch bridge status on mount and when enabled changes
+  React.useEffect(() => {
+    if (claudeCodeIntegration.enabled) {
+      window.electronAPI.mcp.getStatus().then((status) => {
+        setBridgePort(status.port);
+      });
+    } else {
+      setBridgePort(null);
+    }
+  }, [claudeCodeIntegration.enabled]);
+
+  const handleEnabledChange = (checked: boolean) => {
+    // Just update the settings - App.tsx useEffect will handle the bridge
+    setClaudeCodeIntegration({ enabled: checked });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium">{t('Claude Code Integration')}</h3>
+        <p className="text-sm text-muted-foreground">
+          {t('Connect to Claude Code CLI for enhanced IDE features')}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <span className="text-sm font-medium">{t('Enable Integration')}</span>
+          <p className="text-xs text-muted-foreground">
+            {t('Start WebSocket server for Claude Code connection')}
+            {bridgePort && ` (Port: ${bridgePort})`}
+          </p>
+        </div>
+        <Switch checked={claudeCodeIntegration.enabled} onCheckedChange={handleEnabledChange} />
+      </div>
+
+      {claudeCodeIntegration.enabled && (
+        <div className="mt-4 space-y-4 border-t pt-4">
+          {/* Selection Changed Debounce */}
+          <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <span className="text-sm font-medium">{t('Debounce Time')}</span>
+            <div className="space-y-1.5">
+              <Select
+                value={String(claudeCodeIntegration.selectionChangedDebounce)}
+                onValueChange={(v) =>
+                  setClaudeCodeIntegration({ selectionChangedDebounce: Number(v) })
+                }
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue>{claudeCodeIntegration.selectionChangedDebounce}ms</SelectValue>
+                </SelectTrigger>
+                <SelectPopup>
+                  {debounceOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t('Delay before sending selection changes to Claude Code')}
+              </p>
+            </div>
+          </div>
+
+          {/* At Mentioned Keybinding */}
+          <div className="grid grid-cols-[140px_1fr] items-start gap-4">
+            <span className="text-sm font-medium mt-2">{t('Mention Shortcut')}</span>
+            <div className="space-y-1.5">
+              <KeybindingInput
+                value={claudeCodeIntegration.atMentionedKeybinding}
+                onChange={(binding) => setClaudeCodeIntegration({ atMentionedKeybinding: binding })}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('Send selected code range to Claude Code')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

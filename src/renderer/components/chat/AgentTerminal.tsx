@@ -47,12 +47,16 @@ export function AgentTerminal({
   // Build command with session args
   const command = useMemo(() => {
     const supportsSession = agentCommand === 'claude';
+    const supportIde = agentCommand === 'claude';
     const agentArgs =
       supportsSession && sessionId
         ? initialized
           ? ['--resume', sessionId]
           : ['--session-id', sessionId]
         : [];
+    if (supportIde) {
+      agentArgs.push('--ide');
+    }
     const fullCommand = `${agentCommand} ${agentArgs.join(' ')}`.trim();
 
     const isWindows = window.electronAPI?.env?.platform === 'win32';
@@ -147,6 +151,7 @@ export function AgentTerminal({
       agentNotificationEnabled,
       agentNotificationDelay,
       sessionId,
+      t,
     ]
   );
 
@@ -272,7 +277,7 @@ export function AgentTerminal({
           break;
       }
     },
-    [terminal, clear]
+    [terminal, clear, t]
   );
 
   useEffect(() => {

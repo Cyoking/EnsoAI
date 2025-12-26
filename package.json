@@ -53,6 +53,7 @@
     "react-dom": "^19.1.4",
     "simple-git": "^3.30.0",
     "tailwind-merge": "^3.4.0",
+    "ws": "^8.18.3",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
@@ -62,6 +63,7 @@
     "@types/node": "^22.19.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.23",
     "electron": "^36.9.5",

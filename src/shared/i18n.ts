@@ -447,6 +447,20 @@ export const zhTranslations: Record<string, string> = {
   'Auto quotes': '自动引号',
   'Language defined': '跟随语言',
   'Before whitespace': '空白字符前',
+  // Integration settings
+  Integration: '集成',
+  'Claude Code Integration': 'Claude Code 集成',
+  'Connect to Claude Code CLI for enhanced IDE features':
+    '连接 Claude Code CLI 以获得增强的 IDE 功能',
+  'Enable Integration': '启用集成',
+  'Start WebSocket server for Claude Code connection': '启动 WebSocket 服务器以连接 Claude Code',
+  'Debounce Time': '防抖时间',
+  'Delay before sending selection changes to Claude Code':
+    '发送选区变化到 Claude Code 前的延迟时间',
+  'Mention Shortcut': '提及快捷键',
+  'Send selected code range to Claude Code': '将选中的代码范围发送到 Claude Code',
+  'Sent to Claude Code': '已发送到 Claude Code',
+  lines: '行',
 };
 
 export function normalizeLocale(input?: string): Locale {

@@ -24,6 +24,7 @@ export const IPC_CHANNELS = {
   WORKTREE_LIST: 'worktree:list',
   WORKTREE_ADD: 'worktree:add',
   WORKTREE_REMOVE: 'worktree:remove',
+  WORKTREE_ACTIVATE: 'worktree:activate',
 
   // Files
   FILE_READ: 'file:read',
@@ -97,6 +98,12 @@ export const IPC_CHANNELS = {
   UPDATER_CHECK: 'updater:check',
   UPDATER_QUIT_AND_INSTALL: 'updater:quitAndInstall',
   UPDATER_STATUS: 'updater:status',
+
+  // MCP (Claude IDE Bridge)
+  MCP_BRIDGE_SET_ENABLED: 'mcp:bridge:setEnabled',
+  MCP_BRIDGE_GET_STATUS: 'mcp:bridge:getStatus',
+  MCP_SELECTION_CHANGED: 'mcp:selection:changed',
+  MCP_AT_MENTIONED: 'mcp:at:mentioned',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

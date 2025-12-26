@@ -4,6 +4,7 @@ import {
   type WorktreeRemoveOptions,
 } from '@shared/types';
 import { ipcMain } from 'electron';
+import { updateClaudeWorkspaceFolders } from '../services/claude/ClaudeIdeBridge';
 import { WorktreeService } from '../services/git/WorktreeService';
 import { agentSessionManager } from './agent';
 import { stopWatchersInDirectory } from './files';
@@ -55,4 +56,8 @@ export function registerWorktreeHandlers(): void {
       await service.remove(options);
     }
   );
+
+  ipcMain.handle(IPC_CHANNELS.WORKTREE_ACTIVATE, async (_, worktreePaths: string[]) => {
+    updateClaudeWorkspaceFolders(worktreePaths);
+  });
 }

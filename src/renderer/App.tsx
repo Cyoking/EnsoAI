@@ -19,11 +19,11 @@ import {
 import { useEditor } from './hooks/useEditor';
 import { useGitBranches, useGitInit } from './hooks/useGit';
 import { useWorktreeCreate, useWorktreeList, useWorktreeRemove } from './hooks/useWorktree';
+import { useI18n } from './i18n';
 import { matchesKeybinding } from './lib/keybinding';
 import { useNavigationStore } from './stores/navigation';
 import { useSettingsStore } from './stores/settings';
 import { useWorktreeStore } from './stores/worktree';
-import { useI18n } from './i18n';
 
 // Animation config
 const panelTransition = { type: 'spring' as const, stiffness: 400, damping: 30 };
@@ -381,6 +381,17 @@ export default function App() {
       localStorage.removeItem('enso-active-worktree');
     }
   }, [activeWorktree]);
+
+  // Sync Claude IDE Bridge with active worktree
+  const claudeCodeIntegration = useSettingsStore((s) => s.claudeCodeIntegration);
+  useEffect(() => {
+    if (claudeCodeIntegration.enabled) {
+      const folders = activeWorktree ? [activeWorktree.path] : [];
+      window.electronAPI.mcp.setEnabled(true, folders);
+    } else {
+      window.electronAPI.mcp.setEnabled(false);
+    }
+  }, [claudeCodeIntegration.enabled, activeWorktree]);
 
   // Sync activeWorktree with loaded worktrees data
   useEffect(() => {
