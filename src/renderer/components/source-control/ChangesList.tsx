@@ -1,5 +1,6 @@
 import type { FileChange, FileChangeStatus } from '@shared/types';
 import {
+  Eye,
   FileEdit,
   FilePlus,
   FileWarning,
@@ -10,12 +11,15 @@ import {
   RotateCcw,
   TreeDeciduous,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useSettingsStore } from '@/stores/settings';
 import { useSourceControlStore } from '@/stores/sourceControl';
 import { ChangesTree } from './ChangesTree';
+import { CodeReviewModal } from './CodeReviewModal';
 
 interface ChangesListProps {
   staged: FileChange[];
@@ -26,6 +30,7 @@ interface ChangesListProps {
   onUnstage: (paths: string[]) => void;
   onDiscard: (path: string) => void;
   onDeleteUntracked?: (path: string) => void;
+  repoPath?: string;
 }
 
 // M=Modified, A=Added, D=Deleted, R=Renamed, C=Copied, U=Untracked, X=Conflict
@@ -131,9 +136,12 @@ export function ChangesList({
   onUnstage,
   onDiscard,
   onDeleteUntracked,
+  repoPath,
 }: ChangesListProps) {
   const { t } = useI18n();
   const { viewMode, setViewMode } = useSourceControlStore();
+  const codeReviewEnabled = useSettingsStore((s) => s.codeReview.enabled);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Separate tracked and untracked changes
   const trackedChanges = unstaged.filter((f) => f.status !== 'U');
@@ -159,7 +167,18 @@ export function ChangesList({
     return (
       <div className="flex h-full flex-col">
         {/* View Mode Toggle */}
-        <div className="flex h-9 shrink-0 items-center justify-end border-b px-3">
+        <div className="flex h-9 shrink-0 items-center justify-end gap-2 border-b px-3">
+          {codeReviewEnabled && (
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => setIsReviewModalOpen(true)}
+              title={t('Start code review')}
+            >
+              <Eye />
+              {t('Review')}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="xs"
@@ -184,6 +203,12 @@ export function ChangesList({
             onDeleteUntracked={onDeleteUntracked}
           />
         </div>
+
+        <CodeReviewModal
+          open={isReviewModalOpen}
+          onOpenChange={setIsReviewModalOpen}
+          repoPath={repoPath}
+        />
       </div>
     );
   }
@@ -194,7 +219,18 @@ export function ChangesList({
   return (
     <div className="flex h-full flex-col">
       {/* View Mode Toggle */}
-      <div className="flex h-9 shrink-0 items-center justify-end border-b px-3">
+      <div className="flex h-9 shrink-0 items-center justify-end gap-2 border-b px-3">
+        {codeReviewEnabled && (
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => setIsReviewModalOpen(true)}
+            title={t('Start code review')}
+          >
+            <Eye />
+            {t('Review')}
+          </Button>
+        )}
         <Button
           variant="outline"
           size="xs"
@@ -325,6 +361,12 @@ export function ChangesList({
           </div>
         </ScrollArea>
       )}
+
+      <CodeReviewModal
+        open={isReviewModalOpen}
+        onOpenChange={setIsReviewModalOpen}
+        repoPath={repoPath}
+      />
     </div>
   );
 }

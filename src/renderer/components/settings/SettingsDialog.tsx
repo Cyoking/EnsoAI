@@ -2203,6 +2203,8 @@ function IntegrationSettings() {
     setClaudeCodeIntegration,
     commitMessageGenerator,
     setCommitMessageGenerator,
+    codeReview,
+    setCodeReview,
   } = useSettingsStore();
   const [bridgePort, setBridgePort] = React.useState<number | null>(null);
 
@@ -2393,6 +2395,56 @@ function IntegrationSettings() {
                 <p className="text-xs text-muted-foreground">
                   {t('Claude model for generating commit messages')}
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Code Review Section */}
+      <div className="mt-6 border-t pt-6">
+        <div>
+          <h3 className="text-lg font-medium">{t('Code Review')}</h3>
+          <p className="text-sm text-muted-foreground">
+            {t('AI-powered code review for staged changes')}
+          </p>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-sm font-medium">{t('Enable Code Review')}</span>
+            <p className="text-xs text-muted-foreground">
+              {t('Show code review button in source control')}
+            </p>
+          </div>
+          <Switch
+            checked={codeReview.enabled}
+            onCheckedChange={(checked) => setCodeReview({ enabled: checked })}
+          />
+        </div>
+
+        {codeReview.enabled && (
+          <div className="mt-4 space-y-4 border-t pt-4">
+            {/* Model */}
+            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+              <span className="text-sm font-medium">{t('Model')}</span>
+              <div className="space-y-1.5">
+                <Select
+                  value={codeReview.model}
+                  onValueChange={(v) => setCodeReview({ model: v as 'opus' | 'sonnet' | 'haiku' })}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue>
+                      {codeReview.model.charAt(0).toUpperCase() + codeReview.model.slice(1)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectPopup>
+                    <SelectItem value="haiku">Haiku</SelectItem>
+                    <SelectItem value="sonnet">Sonnet</SelectItem>
+                    <SelectItem value="opus">Opus</SelectItem>
+                  </SelectPopup>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t('Claude model for code review')}</p>
               </div>
             </div>
           </div>

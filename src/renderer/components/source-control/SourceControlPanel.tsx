@@ -420,6 +420,7 @@ export function SourceControlPanel({
                         onUnstage={handleUnstage}
                         onDiscard={handleDiscard}
                         onDeleteUntracked={handleDeleteUntracked}
+                        repoPath={rootPath}
                       />
                     </div>
                     {/* Commit Box */}

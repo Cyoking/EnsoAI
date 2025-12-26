@@ -174,6 +174,19 @@ export const defaultCommitMessageGeneratorSettings: CommitMessageGeneratorSettin
   model: 'haiku',
 };
 
+// Code review settings
+export type CodeReviewModel = 'opus' | 'sonnet' | 'haiku';
+
+export interface CodeReviewSettings {
+  enabled: boolean;
+  model: CodeReviewModel;
+}
+
+export const defaultCodeReviewSettings: CodeReviewSettings = {
+  enabled: true,
+  model: 'haiku',
+};
+
 // Editor settings
 export type EditorLineNumbers = 'on' | 'off' | 'relative';
 export type EditorWordWrap = 'on' | 'off' | 'wordWrapColumn' | 'bounded';
@@ -308,6 +321,7 @@ interface SettingsState {
   agentNotificationEnterDelay: number; // delay after Enter before starting idle timer
   claudeCodeIntegration: ClaudeCodeIntegrationSettings;
   commitMessageGenerator: CommitMessageGeneratorSettings;
+  codeReview: CodeReviewSettings;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (language: Locale) => void;
@@ -337,6 +351,7 @@ interface SettingsState {
   setAgentNotificationEnterDelay: (delay: number) => void;
   setClaudeCodeIntegration: (settings: Partial<ClaudeCodeIntegrationSettings>) => void;
   setCommitMessageGenerator: (settings: Partial<CommitMessageGeneratorSettings>) => void;
+  setCodeReview: (settings: Partial<CodeReviewSettings>) => void;
 }
 
 const defaultAgentSettings: AgentSettings = {
@@ -378,6 +393,7 @@ export const useSettingsStore = create<SettingsState>()(
       agentNotificationEnterDelay: 0, // 0 = disabled, start timer immediately
       claudeCodeIntegration: defaultClaudeCodeIntegrationSettings,
       commitMessageGenerator: defaultCommitMessageGeneratorSettings,
+      codeReview: defaultCodeReviewSettings,
 
       setTheme: (theme) => {
         const terminalTheme = get().terminalTheme;
@@ -487,6 +503,10 @@ export const useSettingsStore = create<SettingsState>()(
       setCommitMessageGenerator: (settings) =>
         set((state) => ({
           commitMessageGenerator: { ...state.commitMessageGenerator, ...settings },
+        })),
+      setCodeReview: (settings) =>
+        set((state) => ({
+          codeReview: { ...state.codeReview, ...settings },
         })),
     }),
     {
