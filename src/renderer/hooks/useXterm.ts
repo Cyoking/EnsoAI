@@ -425,8 +425,8 @@ export function useXterm({
         }
       });
 
-      // Focus terminal after initialization
-      terminal.focus();
+      // Note: Don't focus here - wait for first data to avoid cursor on blank screen
+      // Focus is handled by the isActive effect after isLoading becomes false
     } catch (error) {
       setIsLoading(false);
       terminal.writeln(`\x1b[31mFailed to start terminal.\x1b[0m`);
@@ -514,15 +514,15 @@ export function useXterm({
     };
   }, []);
 
-  // Fit and focus when becoming active
+  // Fit and focus when becoming active (only after loading completes)
   useEffect(() => {
-    if (isActive && terminalRef.current) {
+    if (isActive && terminalRef.current && !isLoading) {
       requestAnimationFrame(() => {
         fit();
         terminalRef.current?.focus();
       });
     }
-  }, [isActive, fit]);
+  }, [isActive, isLoading, fit]);
 
   // Handle window visibility change to refresh terminal rendering
   useEffect(() => {
