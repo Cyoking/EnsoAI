@@ -255,12 +255,15 @@ jobs:
           find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" \) -exec cp {} release/ \;
           ls -la release/
 
-      - name: Delete existing nightly release
+      - name: Delete existing nightly releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BASE_VERSION=$(echo "${{ needs.prepare.outputs.version }}" | cut -d'-' -f1)
-          gh release delete "v${BASE_VERSION}-nightly" --yes --cleanup-tag || true
+          # 删除所有 -nightly 后缀的 release
+          gh release list --limit 100 | grep -E '\-nightly\s' | awk '{print $3}' | while read tag; do
+            echo "Deleting release: $tag"
+            gh release delete "$tag" --yes --cleanup-tag || true
+          done
 
       - name: Create nightly release
         env:
