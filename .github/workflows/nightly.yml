@@ -198,14 +198,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Windows
-        run: npx electron-builder --win --x64 --publish never --config.win.target=portable
+        run: npx electron-builder --win --x64 --publish never -c.win.target=nsis -c.win.target=portable
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-x64
           path: |
-            dist/*portable*.exe
+            dist/*.exe
             dist/*.yml
           retention-days: 7
 
@@ -370,7 +370,8 @@ jobs:
           |------|------|
           | macOS (Apple Silicon) | EnsoAI-${VERSION}-arm64.dmg |
           | macOS (Intel) | EnsoAI-${VERSION}.dmg |
-          | Windows (x64) | EnsoAI-${VERSION}-portable.exe |
+          | Windows (x64 安装版) | EnsoAI-Setup-${VERSION}.exe |
+          | Windows (x64 便携版) | EnsoAI-${VERSION}-portable.exe |
           | Linux (x64) | EnsoAI-${VERSION}.AppImage |
 
           > ⚠️ **macOS 用户注意**: 由于应用未签名，首次打开可能提示"已损坏"，请在终端执行：
@@ -383,5 +384,6 @@ jobs:
             --title "Nightly Build (${SHORT_SHA})" \
             --notes-file notes.md \
             --prerelease \
+            --latest=false \
             --target ${{ github.sha }} \
             release/*
