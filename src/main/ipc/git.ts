@@ -346,8 +346,12 @@ ${truncatedDiff}`;
 
       // Gather git info
       const gitDiff = runGit('git --no-pager diff HEAD');
+      const defaultBranch =
+        runGit(
+          "git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'"
+        ) || 'main';
       const gitLog = runGit(
-        'git --no-pager log origin/main..HEAD --oneline 2>/dev/null || git --no-pager log -10 --oneline'
+        `git --no-pager log origin/${defaultBranch}..HEAD --oneline 2>/dev/null || git --no-pager log -10 --oneline`
       );
 
       if (!gitDiff && !gitLog) {
