@@ -388,6 +388,7 @@ export function useXterm({
         }
         // Ctrl+V or Ctrl+Shift+V: Paste from clipboard
         if (event.key === 'v' || event.key === 'V') {
+          event.preventDefault();
           navigator.clipboard
             .readText()
             .then((text) => {
