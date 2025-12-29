@@ -12,6 +12,14 @@ export function destroyAllTerminals(): void {
   ptyManager.destroyAll();
 }
 
+/**
+ * Destroy all terminals and wait for them to fully exit.
+ * This should be used during app shutdown to prevent crashes.
+ */
+export async function destroyAllTerminalsAndWait(): Promise<void> {
+  await ptyManager.destroyAllAndWait();
+}
+
 export function registerTerminalHandlers(): void {
   ipcMain.handle(
     IPC_CHANNELS.TERMINAL_CREATE,

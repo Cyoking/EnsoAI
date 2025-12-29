@@ -183,12 +183,17 @@ export class PtyManager {
       onData(data);
     });
 
-    ptyProcess.onExit(({ exitCode, signal }) => {
-      this.sessions.delete(id);
-      onExit?.(exitCode, signal);
-    });
+    // Store session first so onExit callback can access it
+    const session: PtySession = { pty: ptyProcess, cwd, onData, onExit };
+    this.sessions.set(id, session);
 
-    this.sessions.set(id, { pty: ptyProcess, cwd, onData, onExit });
+    ptyProcess.onExit(({ exitCode, signal }) => {
+      // Read onExit from session to allow it to be replaced during cleanup
+      const currentSession = this.sessions.get(id);
+      const exitHandler = currentSession?.onExit;
+      this.sessions.delete(id);
+      exitHandler?.(exitCode, signal);
+    });
 
     return id;
   }
@@ -225,10 +230,71 @@ export class PtyManager {
     }
   }
 
+  /**
+   * Destroy a PTY session and wait for it to fully exit.
+   * Returns a promise that resolves when the process has exited.
+   */
+  destroyAndWait(id: string, timeout = 3000): Promise<void> {
+    return new Promise((resolve) => {
+      const session = this.sessions.get(id);
+      if (!session) {
+        resolve();
+        return;
+      }
+
+      const pid = session.pty.pid;
+      let resolved = false;
+
+      // Set up timeout
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          this.sessions.delete(id);
+          resolve();
+        }
+      }, timeout);
+
+      // Replace the onExit callback to resolve when process exits
+      session.onExit = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          this.sessions.delete(id);
+          // Don't call original onExit during cleanup to avoid issues
+          resolve();
+        }
+      };
+
+      // Re-register the onExit handler with node-pty
+      // Note: node-pty's onExit is already set, but we've updated session.onExit
+      // The existing onExit handler in create() will call session.onExit
+
+      // Kill the process
+      if (isWindows && pid) {
+        exec(`taskkill /F /T /PID ${pid}`, () => {});
+      } else {
+        session.pty.kill();
+      }
+    });
+  }
+
   destroyAll(): void {
     for (const id of this.sessions.keys()) {
       this.destroy(id);
     }
+  }
+
+  /**
+   * Destroy all PTY sessions and wait for them to fully exit.
+   * This should be used during app shutdown to prevent crashes.
+   */
+  async destroyAllAndWait(timeout = 3000): Promise<void> {
+    const ids = Array.from(this.sessions.keys());
+    if (ids.length === 0) return;
+
+    console.log(`[pty] Destroying ${ids.length} PTY sessions...`);
+    await Promise.all(ids.map((id) => this.destroyAndWait(id, timeout)));
+    console.log('[pty] All PTY sessions destroyed');
   }
 
   destroyByWorkdir(workdir: string): void {
