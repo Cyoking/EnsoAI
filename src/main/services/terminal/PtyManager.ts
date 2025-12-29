@@ -2,7 +2,7 @@ import { exec, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
-import type { ShellConfig, TerminalCreateOptions } from '@shared/types';
+import type { TerminalCreateOptions } from '@shared/types';
 import * as pty from 'node-pty';
 import { detectShell, shellDetector } from './ShellDetector';
 

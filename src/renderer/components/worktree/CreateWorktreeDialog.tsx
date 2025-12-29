@@ -208,8 +208,6 @@ export function CreateWorktreeDialog({
                 items={branchGroups}
                 defaultValue={defaultBranchItem}
                 onValueChange={(item: BranchItem | null) => setBaseBranch(item?.value || '')}
-                getOptionLabel={(item: BranchItem) => item.label}
-                getOptionValue={(item: BranchItem) => item.value}
               >
                 <ComboboxInput
                   placeholder={t('Search branches...')}

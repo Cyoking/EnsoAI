@@ -1,4 +1,4 @@
-import { normalizeLocale, type Locale } from '@shared/i18n';
+import { type Locale, normalizeLocale } from '@shared/i18n';
 
 let currentLocale: Locale = 'en';
 

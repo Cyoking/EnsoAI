@@ -29,7 +29,7 @@ self.MonacoEnvironment = {
 loader.config({ monaco });
 
 // Pre-initialize Monaco to ensure it's ready before any editor renders
-const loadedMonaco = await loader.init();
+const _loadedMonaco = await loader.init();
 
 // Pre-create models to trigger language feature loading (tokenizers are lazy-loaded)
 // This ensures syntax highlighting works immediately for DiffEditor

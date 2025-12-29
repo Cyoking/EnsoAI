@@ -53,7 +53,9 @@ export function WorktreeList({
         </EmptyMedia>
         <EmptyHeader>
           <EmptyTitle>{t('No worktrees')}</EmptyTitle>
-          <EmptyDescription>{t('Click the button in the top right to create your first worktree')}</EmptyDescription>
+          <EmptyDescription>
+            {t('Click the button in the top right to create your first worktree')}
+          </EmptyDescription>
         </EmptyHeader>
       </Empty>
     );

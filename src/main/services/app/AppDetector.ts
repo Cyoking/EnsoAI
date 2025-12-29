@@ -233,7 +233,10 @@ export class AppDetector {
       // macOS: use open command or direct CLI
       if (detectedApp.category === AppCategory.Editor && options?.workspacePath) {
         // For editors, use CLI to open workspace with files
-        await this.openEditorWithFiles(bundleId, detectedApp.path, options);
+        await this.openEditorWithFiles(bundleId, detectedApp.path, {
+          ...options,
+          workspacePath: options.workspacePath,
+        });
       } else if (options?.line && detectedApp.category === AppCategory.Editor) {
         const lineArgs = this.getLineArgs(bundleId, path, options.line);
         await execAsync(`open -b "${bundleId}" ${lineArgs}`);

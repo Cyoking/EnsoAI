@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useXterm } from '@/hooks/useXterm';
-import { matchesKeybinding } from '@/lib/keybinding';
 import { useI18n } from '@/i18n';
+import { matchesKeybinding } from '@/lib/keybinding';
 import { useSettingsStore } from '@/stores/settings';
 import { TerminalSearchBar, type TerminalSearchBarRef } from './TerminalSearchBar';
 
@@ -97,7 +97,7 @@ export function ShellTerminal({
           break;
       }
     },
-    [terminal, clear]
+    [terminal, clear, t]
   );
 
   useEffect(() => {

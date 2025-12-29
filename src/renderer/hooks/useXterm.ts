@@ -375,7 +375,7 @@ export function useXterm({
 
       // Windows/Linux: Ctrl+C to copy (when text is selected), Ctrl+V to paste
       // On macOS, Cmd+C/V is handled by the browser natively
-      const platform = window.electronAPI.platform;
+      const platform = window.electronAPI.env.platform;
       if (platform !== 'darwin' && event.type === 'keydown' && event.ctrlKey && !event.altKey) {
         // Ctrl+Shift+C: Always send SIGINT (for users who need to interrupt even with selection)
         // Ctrl+C: Copy if has selection, otherwise let terminal handle (SIGINT)

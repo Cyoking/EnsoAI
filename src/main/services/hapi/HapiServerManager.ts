@@ -8,7 +8,7 @@ import { findLoginShell, getEnhancedPath } from '../terminal/PtyManager';
 import { shellDetector } from '../terminal/ShellDetector';
 
 const execAsync = promisify(exec);
-const isWindows = process.platform === 'win32';
+const _isWindows = process.platform === 'win32';
 
 export interface HapiConfig {
   webappPort: number;

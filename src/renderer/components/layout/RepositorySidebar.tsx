@@ -127,7 +127,9 @@ export function RepositorySidebar({
             </EmptyMedia>
             <EmptyHeader>
               <EmptyTitle className="text-base">{t('Add Repository')}</EmptyTitle>
-              <EmptyDescription>{t('Add a Git repository from a local folder to get started')}</EmptyDescription>
+              <EmptyDescription>
+                {t('Add a Git repository from a local folder to get started')}
+              </EmptyDescription>
             </EmptyHeader>
             <Button onClick={onAddRepository} variant="outline" className="mt-2">
               <Plus className="mr-2 h-4 w-4" />
@@ -218,12 +220,12 @@ export function RepositorySidebar({
           >
             <button
               type="button"
-            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent"
-            onClick={handleRemoveClick}
-          >
-            <FolderMinus className="h-4 w-4" />
-            {t('Remove repository')}
-          </button>
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-accent"
+              onClick={handleRemoveClick}
+            >
+              <FolderMinus className="h-4 w-4" />
+              {t('Remove repository')}
+            </button>
           </div>
         </>
       )}
