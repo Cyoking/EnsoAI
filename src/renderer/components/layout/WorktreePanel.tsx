@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -51,6 +51,7 @@ interface WorktreePanelProps {
     options?: { deleteBranch?: boolean; force?: boolean }
   ) => Promise<void>;
   onMergeWorktree?: (worktree: GitWorktree) => void;
+  onReorderWorktrees?: (fromIndex: number, toIndex: number) => void;
   onRefresh: () => void;
   onInitGit?: () => Promise<void>;
   width?: number;
@@ -72,6 +73,7 @@ export function WorktreePanel({
   onCreateWorktree,
   onRemoveWorktree,
   onMergeWorktree,
+  onReorderWorktrees,
   onRefresh,
   onInitGit,
   width: _width = 280,
@@ -87,11 +89,71 @@ export function WorktreePanel({
   const [forceDelete, setForceDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const filteredWorktrees = worktrees.filter(
-    (wt) =>
-      wt.branch?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      wt.path.toLowerCase().includes(searchQuery.toLowerCase())
+  // Drag reorder
+  const draggedIndexRef = useRef<number | null>(null);
+  const dragImageRef = useRef<HTMLDivElement | null>(null);
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, index: number, worktree: GitWorktree) => {
+      draggedIndexRef.current = index;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+
+      // Create styled drag image
+      const dragImage = document.createElement('div');
+      dragImage.textContent = worktree.branch || worktree.path.split(/[\\/]/).pop() || '';
+      dragImage.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        padding: 8px 12px;
+        background-color: var(--accent);
+        color: var(--accent-foreground);
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        white-space: nowrap;
+        pointer-events: none;
+      `;
+      document.body.appendChild(dragImage);
+      dragImageRef.current = dragImage;
+      e.dataTransfer.setDragImage(dragImage, dragImage.offsetWidth / 2, dragImage.offsetHeight / 2);
+    },
+    []
   );
+
+  const handleDragEnd = useCallback(() => {
+    if (dragImageRef.current) {
+      document.body.removeChild(dragImageRef.current);
+      dragImageRef.current = null;
+    }
+    draggedIndexRef.current = null;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, toIndex: number) => {
+      e.preventDefault();
+      const fromIndex = draggedIndexRef.current;
+      if (fromIndex !== null && fromIndex !== toIndex && onReorderWorktrees) {
+        onReorderWorktrees(fromIndex, toIndex);
+      }
+    },
+    [onReorderWorktrees]
+  );
+
+  // Keep track of original indices for drag reorder when filtering
+  const filteredWorktreesWithIndex = worktrees
+    .map((wt, index) => ({ worktree: wt, originalIndex: index }))
+    .filter(
+      ({ worktree: wt }) =>
+        wt.branch?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        wt.path.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   // Get the main worktree path for git operations
   const mainWorktree = worktrees.find((wt) => wt.isMainWorktree);
@@ -227,7 +289,7 @@ export function WorktreePanel({
               <WorktreeItemSkeleton key={`skeleton-${i}`} />
             ))}
           </div>
-        ) : filteredWorktrees.length === 0 ? (
+        ) : filteredWorktreesWithIndex.length === 0 ? (
           <Empty className="border-0">
             <EmptyMedia variant="icon">
               <GitBranch className="h-4.5 w-4.5" />
@@ -260,7 +322,7 @@ export function WorktreePanel({
           </Empty>
         ) : (
           <div className="space-y-1">
-            {filteredWorktrees.map((worktree) => (
+            {filteredWorktreesWithIndex.map(({ worktree, originalIndex }) => (
               <WorktreeItem
                 key={worktree.path}
                 worktree={worktree}
@@ -268,6 +330,11 @@ export function WorktreePanel({
                 onClick={() => onSelectWorktree(worktree)}
                 onDelete={() => setWorktreeToDelete(worktree)}
                 onMerge={onMergeWorktree ? () => onMergeWorktree(worktree) : undefined}
+                draggable={!searchQuery && !!onReorderWorktrees}
+                onDragStart={(e) => handleDragStart(e, originalIndex, worktree)}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, originalIndex)}
               />
             ))}
           </div>
@@ -386,9 +453,26 @@ interface WorktreeItemProps {
   onClick: () => void;
   onDelete: () => void;
   onMerge?: () => void;
+  // Drag reorder props
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
 }
 
-function WorktreeItem({ worktree, isActive, onClick, onDelete, onMerge }: WorktreeItemProps) {
+function WorktreeItem({
+  worktree,
+  isActive,
+  onClick,
+  onDelete,
+  onMerge,
+  draggable,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+}: WorktreeItemProps) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -447,6 +531,11 @@ function WorktreeItem({ worktree, isActive, onClick, onDelete, onMerge }: Worktr
     <>
       <button
         type="button"
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         onClick={onClick}
         onContextMenu={handleContextMenu}
         className={cn(

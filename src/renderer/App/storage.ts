@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   ACTIVE_WORKTREE: 'enso-active-worktree', // deprecated, kept for migration
   ACTIVE_WORKTREES: 'enso-active-worktrees', // per-repo worktree map
   WORKTREE_TABS: 'enso-worktree-tabs',
+  WORKTREE_ORDER: 'enso-worktree-order', // per-repo worktree display order map
   REPOSITORY_WIDTH: 'enso-repository-width',
   WORKTREE_WIDTH: 'enso-worktree-width',
   REPOSITORY_COLLAPSED: 'enso-repository-collapsed',
@@ -47,6 +48,23 @@ export const getStoredWorktreeMap = (): Record<string, string> => {
     }
   }
   return {};
+};
+
+// Per-repo worktree order: { [repoPath]: { [worktreePath]: displayOrder } }
+export const getStoredWorktreeOrderMap = (): Record<string, Record<string, number>> => {
+  const saved = localStorage.getItem(STORAGE_KEYS.WORKTREE_ORDER);
+  if (saved) {
+    try {
+      return JSON.parse(saved) as Record<string, Record<string, number>>;
+    } catch {
+      return {};
+    }
+  }
+  return {};
+};
+
+export const saveWorktreeOrderMap = (orderMap: Record<string, Record<string, number>>): void => {
+  localStorage.setItem(STORAGE_KEYS.WORKTREE_ORDER, JSON.stringify(orderMap));
 };
 
 // Normalize path for comparison (handles Windows case-insensitivity and trailing slashes)

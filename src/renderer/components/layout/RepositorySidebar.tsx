@@ -1,5 +1,5 @@
 import { FolderGit2, FolderMinus, PanelLeftClose, Plus, Search, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -31,6 +31,7 @@ interface RepositorySidebarProps {
   onSelectRepo: (repoPath: string) => void;
   onAddRepository: () => void;
   onRemoveRepository?: (repoPath: string) => void;
+  onReorderRepositories?: (fromIndex: number, toIndex: number) => void;
   onOpenSettings?: () => void;
   collapsed?: boolean;
   onCollapse?: () => void;
@@ -42,6 +43,7 @@ export function RepositorySidebar({
   onSelectRepo,
   onAddRepository,
   onRemoveRepository,
+  onReorderRepositories,
   onOpenSettings,
   collapsed: _collapsed = false,
   onCollapse,
@@ -52,6 +54,60 @@ export function RepositorySidebar({
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [menuRepo, setMenuRepo] = useState<Repository | null>(null);
   const [repoToRemove, setRepoToRemove] = useState<Repository | null>(null);
+
+  // Drag reorder
+  const draggedIndexRef = useRef<number | null>(null);
+  const dragImageRef = useRef<HTMLDivElement | null>(null);
+
+  const handleDragStart = useCallback((e: React.DragEvent, index: number, repo: Repository) => {
+    draggedIndexRef.current = index;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+
+    // Create styled drag image
+    const dragImage = document.createElement('div');
+    dragImage.textContent = repo.name;
+    dragImage.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        padding: 8px 12px;
+        background-color: var(--accent);
+        color: var(--accent-foreground);
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        white-space: nowrap;
+        pointer-events: none;
+      `;
+    document.body.appendChild(dragImage);
+    dragImageRef.current = dragImage;
+    e.dataTransfer.setDragImage(dragImage, dragImage.offsetWidth / 2, dragImage.offsetHeight / 2);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragImageRef.current) {
+      document.body.removeChild(dragImageRef.current);
+      dragImageRef.current = null;
+    }
+    draggedIndexRef.current = null;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, toIndex: number) => {
+      e.preventDefault();
+      const fromIndex = draggedIndexRef.current;
+      if (fromIndex !== null && fromIndex !== toIndex && onReorderRepositories) {
+        onReorderRepositories(fromIndex, toIndex);
+      }
+    },
+    [onReorderRepositories]
+  );
 
   const handleContextMenu = (e: React.MouseEvent, repo: Repository) => {
     e.preventDefault();
@@ -74,9 +130,10 @@ export function RepositorySidebar({
     setRepoToRemove(null);
   };
 
-  const filteredRepos = repositories.filter((repo) =>
-    repo.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Keep track of original indices for drag reorder
+  const filteredRepos = repositories
+    .map((repo, index) => ({ repo, originalIndex: index }))
+    .filter(({ repo }) => repo.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <aside className="flex h-full w-full flex-col border-r bg-background">
@@ -110,7 +167,7 @@ export function RepositorySidebar({
 
       {/* Repository List */}
       <div className="flex-1 overflow-auto p-2">
-        {filteredRepos.length === 0 && searchQuery ? (
+        {filteredRepos.length === 0 && searchQuery.length > 0 ? (
           <Empty className="border-0">
             <EmptyMedia variant="icon">
               <Search className="h-4.5 w-4.5" />
@@ -138,10 +195,15 @@ export function RepositorySidebar({
           </Empty>
         ) : (
           <div className="space-y-1">
-            {filteredRepos.map((repo) => (
+            {filteredRepos.map(({ repo, originalIndex }) => (
               <button
                 type="button"
                 key={repo.path}
+                draggable={!searchQuery}
+                onDragStart={(e) => handleDragStart(e, originalIndex, repo)}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, originalIndex)}
                 onClick={() => onSelectRepo(repo.path)}
                 onContextMenu={(e) => handleContextMenu(e, repo)}
                 className={cn(
