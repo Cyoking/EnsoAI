@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import type { TerminalCreateOptions } from '@shared/types';
 import * as pty from 'node-pty';
+import { getProxyEnvVars } from '../proxy/ProxyConfig';
 import { detectShell, shellDetector } from './ShellDetector';
 
 const isWindows = process.platform === 'win32';
@@ -190,6 +191,7 @@ export class PtyManager {
         cwd,
         env: {
           ...process.env,
+          ...getProxyEnvVars(),
           ...options.env,
           PATH: getEnhancedPath(),
           TERM: 'xterm-256color',
@@ -212,6 +214,7 @@ export class PtyManager {
             cwd,
             env: {
               ...process.env,
+              ...getProxyEnvVars(),
               ...options.env,
               PATH: getEnhancedPath(),
               TERM: 'xterm-256color',

@@ -1,6 +1,6 @@
 import type { Locale } from '@shared/i18n';
 import { normalizeLocale } from '@shared/i18n';
-import type { BuiltinAgentId, CustomAgent, ShellConfig } from '@shared/types';
+import type { BuiltinAgentId, CustomAgent, ProxySettings, ShellConfig } from '@shared/types';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
@@ -232,6 +232,13 @@ export const defaultHapiSettings: HapiSettings = {
   happyEnabled: false,
 };
 
+// Proxy settings default
+export const defaultProxySettings: ProxySettings = {
+  enabled: false,
+  server: '',
+  bypassList: 'localhost,127.0.0.1',
+};
+
 // Editor settings
 export type EditorLineNumbers = 'on' | 'off' | 'relative';
 export type EditorWordWrap = 'on' | 'off' | 'wordWrapColumn' | 'bounded';
@@ -375,6 +382,7 @@ interface SettingsState {
   codeReview: CodeReviewSettings;
   allowNightlyUpdates: boolean;
   hapiSettings: HapiSettings;
+  proxySettings: ProxySettings;
 
   setTheme: (theme: Theme) => void;
   setLanguage: (language: Locale) => void;
@@ -408,6 +416,7 @@ interface SettingsState {
   setCodeReview: (settings: Partial<CodeReviewSettings>) => void;
   setAllowNightlyUpdates: (enabled: boolean) => void;
   setHapiSettings: (settings: Partial<HapiSettings>) => void;
+  setProxySettings: (settings: Partial<ProxySettings>) => void;
 }
 
 const defaultAgentSettings: AgentSettings = {
@@ -453,6 +462,7 @@ export const useSettingsStore = create<SettingsState>()(
       codeReview: defaultCodeReviewSettings,
       allowNightlyUpdates: false,
       hapiSettings: defaultHapiSettings,
+      proxySettings: defaultProxySettings,
 
       setTheme: (theme) => {
         const terminalTheme = get().terminalTheme;
@@ -577,6 +587,14 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => ({
           hapiSettings: { ...state.hapiSettings, ...settings },
         })),
+      setProxySettings: (settings) => {
+        set((state) => ({
+          proxySettings: { ...state.proxySettings, ...settings },
+        }));
+        // Notify main process to apply proxy settings
+        const newSettings = { ...get().proxySettings, ...settings };
+        window.electronAPI.app.setProxy(newSettings);
+      },
     }),
     {
       name: 'enso-settings',
@@ -592,6 +610,10 @@ export const useSettingsStore = create<SettingsState>()(
           const resolvedLanguage = normalizeLocale(state.language);
           document.documentElement.lang = resolvedLanguage === 'zh' ? 'zh-CN' : 'en';
           window.electronAPI.app.setLanguage(resolvedLanguage);
+          // Apply proxy settings on startup
+          if (state.proxySettings) {
+            window.electronAPI.app.setProxy(state.proxySettings);
+          }
         }
       },
     }

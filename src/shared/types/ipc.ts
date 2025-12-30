@@ -71,6 +71,8 @@ export const IPC_CHANNELS = {
   APP_CLOSE_CONFIRM: 'app:closeConfirm',
   APP_OPEN_PATH: 'app:openPath',
   APP_SET_LANGUAGE: 'app:setLanguage',
+  APP_SET_PROXY: 'app:setProxy',
+  APP_TEST_PROXY: 'app:testProxy',
 
   // Dialog
   DIALOG_OPEN_DIRECTORY: 'dialog:openDirectory',

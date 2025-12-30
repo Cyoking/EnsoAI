@@ -24,6 +24,7 @@ import type {
   MergeConflict,
   MergeConflictContent,
   MergeState,
+  ProxySettings,
   PullRequest,
   ShellConfig,
   ShellInfo,
@@ -246,6 +247,12 @@ const electronAPI = {
     },
     setLanguage: (language: Locale): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.APP_SET_LANGUAGE, language),
+    setProxy: (settings: ProxySettings): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.APP_SET_PROXY, settings),
+    testProxy: (
+      proxyUrl: string
+    ): Promise<{ success: boolean; latency?: number; error?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.APP_TEST_PROXY, proxyUrl),
   },
 
   // Dialog

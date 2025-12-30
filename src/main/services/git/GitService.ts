@@ -15,6 +15,7 @@ import type {
   PullRequest,
 } from '@shared/types';
 import simpleGit, { type SimpleGit, type StatusResult } from 'simple-git';
+import { getProxyEnvVars } from '../proxy/ProxyConfig';
 import { getEnhancedPath } from '../terminal/PtyManager';
 
 const execAsync = promisify(exec);
@@ -26,6 +27,7 @@ export class GitService {
   constructor(workdir: string) {
     this.git = simpleGit(workdir).env({
       ...process.env,
+      ...getProxyEnvVars(),
       PATH: getEnhancedPath(),
     });
     this.workdir = workdir;
