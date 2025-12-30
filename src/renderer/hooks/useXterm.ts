@@ -219,6 +219,7 @@ export function useXterm({
       scrollback: settings.scrollback,
       allowProposedApi: true,
       allowTransparency: false,
+      rescaleOverlappingGlyphs: true,
     });
 
     const fitAddon = new FitAddon();

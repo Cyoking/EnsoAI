@@ -24,6 +24,12 @@ interface WorktreeCardProps {
   onOpenInFinder?: (worktree: GitWorktree) => void;
   onCopyPath?: (worktree: GitWorktree) => void;
   onRemove?: (worktree: GitWorktree) => void;
+  // Drag reorder props
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
 }
 
 export function WorktreeCard({
@@ -35,6 +41,11 @@ export function WorktreeCard({
   onOpenInFinder,
   onCopyPath,
   onRemove,
+  draggable,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
 }: WorktreeCardProps) {
   const { t } = useI18n();
   const branchName = worktree.branch || t('Detached HEAD');
@@ -46,6 +57,11 @@ export function WorktreeCard({
   return (
     <button
       type="button"
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       className={cn(
         'group relative w-full text-left rounded-lg border bg-card p-4 transition-all hover:shadow-md',
         isActive && 'border-primary ring-1 ring-primary/20',

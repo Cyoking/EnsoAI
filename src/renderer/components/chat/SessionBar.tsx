@@ -17,6 +17,7 @@ export interface Session {
   repoPath: string; // repository path this session belongs to
   cwd: string; // worktree path this session belongs to
   environment?: 'native' | 'wsl' | 'hapi' | 'happy'; // execution environment (default: native)
+  displayOrder?: number; // order in SessionBar (lower = first), used for drag reorder
 }
 
 interface SessionBarProps {
@@ -27,6 +28,7 @@ interface SessionBarProps {
   onNewSession: () => void;
   onNewSessionWithAgent?: (agentId: string, agentCommand: string) => void;
   onRenameSession: (id: string, name: string) => void;
+  onReorderSessions?: (fromIndex: number, toIndex: number) => void;
 }
 
 interface BarState {
@@ -62,6 +64,7 @@ export function SessionBar({
   onNewSession,
   onNewSessionWithAgent,
   onRenameSession,
+  onReorderSessions,
 }: SessionBarProps) {
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,6 +77,82 @@ export function SessionBar({
   const [showAgentMenu, setShowAgentMenu] = useState(false);
   const [installedAgents, setInstalledAgents] = useState<Set<string>>(new Set());
   const dragStart = useRef({ x: 0, y: 0, startX: 0, startY: 0 });
+
+  // Tab drag reorder
+  const draggedTabIndexRef = useRef<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
+  // Store drag image element for cleanup
+  const dragImageRef = useRef<HTMLDivElement | null>(null);
+
+  const handleTabDragStart = useCallback((e: React.DragEvent, index: number) => {
+    draggedTabIndexRef.current = index;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+
+    // Create a simple styled drag image
+    const target = e.currentTarget as HTMLElement;
+    const computedStyle = window.getComputedStyle(target);
+    const textContent = target.querySelector('span')?.textContent || '';
+
+    const dragImage = document.createElement('div');
+    dragImage.textContent = textContent;
+    dragImage.style.cssText = `
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      padding: ${computedStyle.padding};
+      background-color: ${computedStyle.backgroundColor};
+      color: ${computedStyle.color};
+      font-size: ${computedStyle.fontSize};
+      font-family: ${computedStyle.fontFamily};
+      border-radius: 9999px;
+      white-space: nowrap;
+      pointer-events: none;
+    `;
+
+    document.body.appendChild(dragImage);
+    dragImageRef.current = dragImage;
+    e.dataTransfer.setDragImage(dragImage, dragImage.offsetWidth / 2, dragImage.offsetHeight / 2);
+
+    // Prevent bar dragging while tab dragging
+    e.stopPropagation();
+  }, []);
+
+  const handleTabDragEnd = useCallback(() => {
+    // Clean up drag image
+    if (dragImageRef.current) {
+      document.body.removeChild(dragImageRef.current);
+      dragImageRef.current = null;
+    }
+    draggedTabIndexRef.current = null;
+    setDropTargetIndex(null);
+  }, []);
+
+  const handleTabDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedTabIndexRef.current !== null && draggedTabIndexRef.current !== index) {
+      setDropTargetIndex(index);
+    }
+  }, []);
+
+  const handleTabDragLeave = useCallback(() => {
+    setDropTargetIndex(null);
+  }, []);
+
+  const handleTabDrop = useCallback(
+    (e: React.DragEvent, toIndex: number) => {
+      e.preventDefault();
+      const fromIndex = draggedTabIndexRef.current;
+      if (fromIndex !== null && fromIndex !== toIndex && onReorderSessions) {
+        onReorderSessions(fromIndex, toIndex);
+      }
+      draggedTabIndexRef.current = null;
+      setDropTargetIndex(null);
+    },
+    [onReorderSessions]
+  );
 
   // Get enabled agents from settings
   const { agentSettings, customAgents, hapiSettings } = useSettingsStore();
@@ -327,52 +406,72 @@ export function SessionBar({
               <GripVertical className="h-3.5 w-3.5" />
             </div>
 
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                onClick={() => onSelectSession(session.id)}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  handleStartEdit(session);
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && onSelectSession(session.id)}
-                role="button"
-                tabIndex={0}
-                className={cn(
-                  'group flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors cursor-pointer',
-                  activeSessionId === session.id
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                )}
-              >
-                {editingId === session.id ? (
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    onBlur={handleFinishEdit}
-                    onKeyDown={handleKeyDown}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-20 bg-transparent outline-none border-b border-current"
-                  />
-                ) : (
-                  <span>{session.name}</span>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => {
+            {sessions.map((session, index) => (
+              <div key={session.id} className="relative flex items-center">
+                {/* Drop indicator - left side */}
+                {dropTargetIndex === index &&
+                  draggedTabIndexRef.current !== null &&
+                  draggedTabIndexRef.current > index && (
+                    <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />
+                  )}
+                <div
+                  draggable
+                  onDragStart={(e) => handleTabDragStart(e, index)}
+                  onDragEnd={handleTabDragEnd}
+                  onDragOver={(e) => handleTabDragOver(e, index)}
+                  onDragLeave={handleTabDragLeave}
+                  onDrop={(e) => handleTabDrop(e, index)}
+                  onClick={() => onSelectSession(session.id)}
+                  onDoubleClick={(e) => {
                     e.stopPropagation();
-                    onCloseSession(session.id);
+                    handleStartEdit(session);
                   }}
+                  onKeyDown={(e) => e.key === 'Enter' && onSelectSession(session.id)}
+                  role="button"
+                  tabIndex={0}
                   className={cn(
-                    'flex h-4 w-4 items-center justify-center rounded-full transition-colors',
-                    'hover:bg-destructive/20 hover:text-destructive',
-                    activeSessionId !== session.id && 'opacity-0 group-hover:opacity-100'
+                    'group flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors cursor-pointer',
+                    activeSessionId === session.id
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                    draggedTabIndexRef.current === index && 'opacity-50'
                   )}
                 >
-                  <X className="h-3 w-3" />
-                </button>
+                  {editingId === session.id ? (
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onBlur={handleFinishEdit}
+                      onKeyDown={handleKeyDown}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-20 bg-transparent outline-none border-b border-current"
+                    />
+                  ) : (
+                    <span>{session.name}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCloseSession(session.id);
+                    }}
+                    className={cn(
+                      'flex h-4 w-4 items-center justify-center rounded-full transition-colors',
+                      'hover:bg-destructive/20 hover:text-destructive',
+                      activeSessionId !== session.id && 'opacity-0 group-hover:opacity-100'
+                    )}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+                {/* Drop indicator - right side */}
+                {dropTargetIndex === index &&
+                  draggedTabIndexRef.current !== null &&
+                  draggedTabIndexRef.current < index && (
+                    <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />
+                  )}
               </div>
             ))}
 

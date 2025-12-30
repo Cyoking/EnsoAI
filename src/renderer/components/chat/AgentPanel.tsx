@@ -107,6 +107,7 @@ export function AgentPanel({ repoPath, cwd, isActive = false, onSwitchWorktree }
   const removeSession = useAgentSessionsStore((state) => state.removeSession);
   const updateSession = useAgentSessionsStore((state) => state.updateSession);
   const setActiveId = useAgentSessionsStore((state) => state.setActiveId);
+  const reorderSessions = useAgentSessionsStore((state) => state.reorderSessions);
 
   // Get current worktree's active session id (fallback to first session if not set)
   const activeSessionId = useMemo(() => {
@@ -123,9 +124,11 @@ export function AgentPanel({ repoPath, cwd, isActive = false, onSwitchWorktree }
     return firstSession?.id || null;
   }, [activeIds, allSessions, repoPath, cwd]);
 
-  // Filter sessions for current repo+worktree (for SessionBar display)
+  // Filter sessions for current repo+worktree (for SessionBar display, sorted by displayOrder)
   const currentWorktreeSessions = useMemo(() => {
-    return allSessions.filter((s) => s.repoPath === repoPath && s.cwd === cwd);
+    return allSessions
+      .filter((s) => s.repoPath === repoPath && s.cwd === cwd)
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   }, [allSessions, repoPath, cwd]);
 
   // Create initial session when switching to a new repo+worktree
@@ -339,6 +342,13 @@ export function AgentPanel({ repoPath, cwd, isActive = false, onSwitchWorktree }
     [updateSession]
   );
 
+  const handleReorderSessions = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      reorderSessions(repoPath, cwd, fromIndex, toIndex);
+    },
+    [reorderSessions, repoPath, cwd]
+  );
+
   const handleNewSessionWithAgent = useCallback(
     (agentId: string, agentCommand: string) => {
       // Handle WSL, Hapi and Happy agent IDs
@@ -484,6 +494,7 @@ export function AgentPanel({ repoPath, cwd, isActive = false, onSwitchWorktree }
         onNewSession={handleNewSession}
         onNewSessionWithAgent={handleNewSessionWithAgent}
         onRenameSession={handleRenameSession}
+        onReorderSessions={handleReorderSessions}
       />
     </div>
   );

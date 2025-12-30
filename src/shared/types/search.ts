@@ -31,7 +31,8 @@ export interface ContentSearchMatch {
   path: string;
   relativePath: string;
   line: number;
-  column: number;
+  column: number; // 0-based column position
+  matchLength: number; // length of matched text
   content: string;
   beforeContext?: string[];
   afterContext?: string[];

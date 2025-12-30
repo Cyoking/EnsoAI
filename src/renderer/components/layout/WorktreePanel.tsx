@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -51,6 +51,7 @@ interface WorktreePanelProps {
     options?: { deleteBranch?: boolean; force?: boolean }
   ) => Promise<void>;
   onMergeWorktree?: (worktree: GitWorktree) => void;
+  onReorderWorktrees?: (fromIndex: number, toIndex: number) => void;
   onRefresh: () => void;
   onInitGit?: () => Promise<void>;
   width?: number;
@@ -72,6 +73,7 @@ export function WorktreePanel({
   onCreateWorktree,
   onRemoveWorktree,
   onMergeWorktree,
+  onReorderWorktrees,
   onRefresh,
   onInitGit,
   width: _width = 280,
@@ -87,11 +89,81 @@ export function WorktreePanel({
   const [forceDelete, setForceDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const filteredWorktrees = worktrees.filter(
-    (wt) =>
-      wt.branch?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      wt.path.toLowerCase().includes(searchQuery.toLowerCase())
+  // Drag reorder
+  const draggedIndexRef = useRef<number | null>(null);
+  const dragImageRef = useRef<HTMLDivElement | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent, index: number, worktree: GitWorktree) => {
+      draggedIndexRef.current = index;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+
+      // Create styled drag image
+      const dragImage = document.createElement('div');
+      dragImage.textContent = worktree.branch || worktree.path.split(/[\\/]/).pop() || '';
+      dragImage.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        padding: 8px 12px;
+        background-color: var(--accent);
+        color: var(--accent-foreground);
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        white-space: nowrap;
+        pointer-events: none;
+      `;
+      document.body.appendChild(dragImage);
+      dragImageRef.current = dragImage;
+      e.dataTransfer.setDragImage(dragImage, dragImage.offsetWidth / 2, dragImage.offsetHeight / 2);
+    },
+    []
   );
+
+  const handleDragEnd = useCallback(() => {
+    if (dragImageRef.current) {
+      document.body.removeChild(dragImageRef.current);
+      dragImageRef.current = null;
+    }
+    draggedIndexRef.current = null;
+    setDropTargetIndex(null);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedIndexRef.current !== null && draggedIndexRef.current !== index) {
+      setDropTargetIndex(index);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDropTargetIndex(null);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent, toIndex: number) => {
+      e.preventDefault();
+      const fromIndex = draggedIndexRef.current;
+      if (fromIndex !== null && fromIndex !== toIndex && onReorderWorktrees) {
+        onReorderWorktrees(fromIndex, toIndex);
+      }
+      setDropTargetIndex(null);
+    },
+    [onReorderWorktrees]
+  );
+
+  // Keep track of original indices for drag reorder when filtering
+  const filteredWorktreesWithIndex = worktrees
+    .map((wt, index) => ({ worktree: wt, originalIndex: index }))
+    .filter(
+      ({ worktree: wt }) =>
+        wt.branch?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        wt.path.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   // Get the main worktree path for git operations
   const mainWorktree = worktrees.find((wt) => wt.isMainWorktree);
@@ -227,7 +299,7 @@ export function WorktreePanel({
               <WorktreeItemSkeleton key={`skeleton-${i}`} />
             ))}
           </div>
-        ) : filteredWorktrees.length === 0 ? (
+        ) : filteredWorktreesWithIndex.length === 0 ? (
           <Empty className="border-0">
             <EmptyMedia variant="icon">
               <GitBranch className="h-4.5 w-4.5" />
@@ -260,7 +332,7 @@ export function WorktreePanel({
           </Empty>
         ) : (
           <div className="space-y-1">
-            {filteredWorktrees.map((worktree) => (
+            {filteredWorktreesWithIndex.map(({ worktree, originalIndex }) => (
               <WorktreeItem
                 key={worktree.path}
                 worktree={worktree}
@@ -268,6 +340,20 @@ export function WorktreePanel({
                 onClick={() => onSelectWorktree(worktree)}
                 onDelete={() => setWorktreeToDelete(worktree)}
                 onMerge={onMergeWorktree ? () => onMergeWorktree(worktree) : undefined}
+                draggable={!searchQuery && !!onReorderWorktrees}
+                onDragStart={(e) => handleDragStart(e, originalIndex, worktree)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, originalIndex)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, originalIndex)}
+                showDropIndicator={dropTargetIndex === originalIndex}
+                dropDirection={
+                  dropTargetIndex === originalIndex && draggedIndexRef.current !== null
+                    ? draggedIndexRef.current > originalIndex
+                      ? 'top'
+                      : 'bottom'
+                    : null
+                }
               />
             ))}
           </div>
@@ -386,9 +472,32 @@ interface WorktreeItemProps {
   onClick: () => void;
   onDelete: () => void;
   onMerge?: () => void;
+  // Drag reorder props
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragLeave?: () => void;
+  onDrop?: (e: React.DragEvent) => void;
+  showDropIndicator?: boolean;
+  dropDirection?: 'top' | 'bottom' | null;
 }
 
-function WorktreeItem({ worktree, isActive, onClick, onDelete, onMerge }: WorktreeItemProps) {
+function WorktreeItem({
+  worktree,
+  isActive,
+  onClick,
+  onDelete,
+  onMerge,
+  draggable,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  showDropIndicator,
+  dropDirection,
+}: WorktreeItemProps) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -445,90 +554,106 @@ function WorktreeItem({ worktree, isActive, onClick, onDelete, onMerge }: Worktr
 
   return (
     <>
-      <button
-        type="button"
-        onClick={onClick}
-        onContextMenu={handleContextMenu}
-        className={cn(
-          'flex w-full flex-col items-start gap-1 rounded-lg p-3 text-left transition-colors',
-          isPrunable && 'opacity-50',
-          isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+      <div className="relative">
+        {/* Drop indicator - top */}
+        {showDropIndicator && dropDirection === 'top' && (
+          <div className="absolute -top-0.5 left-2 right-2 h-0.5 bg-primary rounded-full" />
         )}
-      >
-        {/* Branch name */}
-        <div className="flex w-full items-center gap-2">
-          <GitBranch
-            className={cn(
-              'h-4 w-4 shrink-0',
-              isPrunable
-                ? 'text-destructive'
-                : isActive
-                  ? 'text-accent-foreground'
-                  : 'text-muted-foreground'
-            )}
-          />
-          <span className={cn('truncate font-medium', isPrunable && 'line-through')}>
-            {branchDisplay}
-          </span>
-          {isPrunable ? (
-            <span className="shrink-0 rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] font-medium uppercase text-destructive">
-              {t('Deleted')}
-            </span>
-          ) : isMain ? (
-            <span className="shrink-0 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase text-emerald-600 dark:text-emerald-400">
-              {t('Main')}
-            </span>
-          ) : null}
-          {/* Activity indicator - green dot */}
-          {hasActivity && (
-            <span
-              className="ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse"
-              title={t('Active sessions')}
-            />
-          )}
-        </div>
-
-        {/* Path */}
-        <div
+        <button
+          type="button"
+          draggable={draggable}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          onClick={onClick}
+          onContextMenu={handleContextMenu}
           className={cn(
-            'w-full truncate pl-6 text-xs',
-            isPrunable && 'line-through',
-            isActive ? 'text-accent-foreground/70' : 'text-muted-foreground'
+            'flex w-full flex-col items-start gap-1 rounded-lg p-3 text-left transition-colors',
+            isPrunable && 'opacity-50',
+            isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
           )}
         >
-          {worktree.path}
-        </div>
-
-        {/* Activity counts and diff stats (only shown when has active sessions) */}
-        {hasActivity && (
-          <div className="flex items-center gap-3 pl-6 text-xs text-muted-foreground">
-            {activity.agentCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                {activity.agentCount}
+          {/* Branch name */}
+          <div className="flex w-full items-center gap-2">
+            <GitBranch
+              className={cn(
+                'h-4 w-4 shrink-0',
+                isPrunable
+                  ? 'text-destructive'
+                  : isActive
+                    ? 'text-accent-foreground'
+                    : 'text-muted-foreground'
+              )}
+            />
+            <span className={cn('truncate font-medium', isPrunable && 'line-through')}>
+              {branchDisplay}
+            </span>
+            {isPrunable ? (
+              <span className="shrink-0 rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] font-medium uppercase text-destructive">
+                {t('Deleted')}
               </span>
-            )}
-            {activity.terminalCount > 0 && (
-              <span className="flex items-center gap-1">
-                <Terminal className="h-3 w-3" />
-                {activity.terminalCount}
+            ) : isMain ? (
+              <span className="shrink-0 rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase text-emerald-600 dark:text-emerald-400">
+                {t('Main')}
               </span>
-            )}
-            {hasDiffStats && (
-              <span className="flex items-center gap-1.5">
-                {diffStats.insertions > 0 && (
-                  <span className="text-emerald-600 dark:text-emerald-400">
-                    +{diffStats.insertions}
-                  </span>
-                )}
-                {diffStats.deletions > 0 && (
-                  <span className="text-red-600 dark:text-red-400">-{diffStats.deletions}</span>
-                )}
-              </span>
+            ) : null}
+            {/* Activity indicator - green dot */}
+            {hasActivity && (
+              <span
+                className="ml-auto h-2 w-2 shrink-0 rounded-full bg-emerald-500 animate-pulse"
+                title={t('Active sessions')}
+              />
             )}
           </div>
+
+          {/* Path */}
+          <div
+            className={cn(
+              'w-full truncate pl-6 text-xs',
+              isPrunable && 'line-through',
+              isActive ? 'text-accent-foreground/70' : 'text-muted-foreground'
+            )}
+          >
+            {worktree.path}
+          </div>
+
+          {/* Activity counts and diff stats (only shown when has active sessions) */}
+          {hasActivity && (
+            <div className="flex items-center gap-3 pl-6 text-xs text-muted-foreground">
+              {activity.agentCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  {activity.agentCount}
+                </span>
+              )}
+              {activity.terminalCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <Terminal className="h-3 w-3" />
+                  {activity.terminalCount}
+                </span>
+              )}
+              {hasDiffStats && (
+                <span className="flex items-center gap-1.5">
+                  {diffStats.insertions > 0 && (
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      +{diffStats.insertions}
+                    </span>
+                  )}
+                  {diffStats.deletions > 0 && (
+                    <span className="text-red-600 dark:text-red-400">-{diffStats.deletions}</span>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+        </button>
+        {/* Drop indicator - bottom */}
+        {showDropIndicator && dropDirection === 'bottom' && (
+          <div className="absolute -bottom-0.5 left-2 right-2 h-0.5 bg-primary rounded-full" />
         )}
-      </button>
+      </div>
 
       {/* Context Menu */}
       {menuOpen && (

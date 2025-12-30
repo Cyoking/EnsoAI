@@ -221,8 +221,8 @@ export function FilePanel({ rootPath, isActive = false }: FilePanelProps) {
 
   // Handle open file from search
   const handleSearchOpenFile = useCallback(
-    (path: string, line?: number, column?: number) => {
-      navigateToFile(path, line, column);
+    (path: string, line?: number, column?: number, matchLength?: number) => {
+      navigateToFile(path, line, column, matchLength);
     },
     [navigateToFile]
   );

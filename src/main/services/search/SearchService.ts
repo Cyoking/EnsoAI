@@ -368,16 +368,18 @@ async function searchContentFallback(
                   fileSet.add(fullPath);
 
                   if (matches.length < options.maxResults) {
-                    // Find column position
+                    // Find column position and match length
                     searchPattern.lastIndex = 0;
                     const match = searchPattern.exec(line);
                     const column = match ? match.index : 0;
+                    const matchLength = match ? match[0].length : 0;
 
                     matches.push({
                       path: fullPath,
                       relativePath: relative(rootPath, fullPath),
                       line: i + 1,
                       column,
+                      matchLength,
                       content: line.trim(),
                     });
                   } else {
@@ -544,11 +546,13 @@ export class SearchService {
               fileSet.add(json.data.path.text);
 
               if (matches.length < maxResults) {
+                const submatch = json.data.submatches?.[0];
                 const match: ContentSearchMatch = {
                   path: json.data.path.text,
                   relativePath: relative(rootPath, json.data.path.text),
                   line: json.data.line_number,
-                  column: json.data.submatches?.[0]?.start || 0,
+                  column: submatch?.start || 0,
+                  matchLength: submatch ? submatch.end - submatch.start : 0,
                   content: json.data.lines.text.replace(/\n$/, ''),
                 };
                 matches.push(match);
@@ -594,11 +598,13 @@ export class SearchService {
               totalMatches++;
               fileSet.add(json.data.path.text);
               if (matches.length < maxResults) {
+                const submatch = json.data.submatches?.[0];
                 const match: ContentSearchMatch = {
                   path: json.data.path.text,
                   relativePath: relative(rootPath, json.data.path.text),
                   line: json.data.line_number,
-                  column: json.data.submatches?.[0]?.start || 0,
+                  column: submatch?.start || 0,
+                  matchLength: submatch ? submatch.end - submatch.start : 0,
                   content: json.data.lines.text.replace(/\n$/, ''),
                 };
                 matches.push(match);

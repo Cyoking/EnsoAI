@@ -217,18 +217,33 @@ export function EditorArea({
     themeDefinedRef.current = true;
   }, [terminalTheme]);
 
-  // Handle pending cursor navigation (jump to line)
+  // Handle pending cursor navigation (jump to line and select match)
   useEffect(() => {
     if (!pendingCursor || !editorRef.current || pendingCursor.path !== activeTabPath) {
       return;
     }
 
     const editor = editorRef.current;
-    const { line, column } = pendingCursor;
+    const { line, column, matchLength } = pendingCursor;
+    // Convert 0-based column to 1-based for Monaco
+    const startColumn = (column ?? 0) + 1;
 
-    // Set cursor position and reveal the line
-    editor.setPosition({ lineNumber: line, column: column ?? 1 });
-    editor.revealLineInCenter(line);
+    if (matchLength && matchLength > 0) {
+      // Select the matched text
+      const selection = {
+        startLineNumber: line,
+        startColumn,
+        endLineNumber: line,
+        endColumn: startColumn + matchLength,
+      };
+      editor.setSelection(selection);
+      editor.revealRangeInCenter(selection);
+    } else {
+      // Just set cursor position
+      editor.setPosition({ lineNumber: line, column: startColumn });
+      editor.revealLineInCenter(line);
+    }
+
     editor.focus();
 
     // Clear the pending cursor
@@ -276,6 +291,32 @@ export function EditorArea({
       // Restore view state if available
       if (activeTab?.viewState) {
         editor.restoreViewState(activeTab.viewState as monaco.editor.ICodeEditorViewState);
+      }
+
+      // Handle pending cursor navigation on mount (for search result navigation)
+      if (pendingCursor && pendingCursor.path === activeTabPath) {
+        const { line, column, matchLength } = pendingCursor;
+        // Convert 0-based column to 1-based for Monaco
+        const startColumn = (column ?? 0) + 1;
+
+        if (matchLength && matchLength > 0) {
+          // Select the matched text
+          const selection = {
+            startLineNumber: line,
+            startColumn,
+            endLineNumber: line,
+            endColumn: startColumn + matchLength,
+          };
+          editor.setSelection(selection);
+          editor.revealRangeInCenter(selection);
+        } else {
+          // Just set cursor position
+          editor.setPosition({ lineNumber: line, column: startColumn });
+          editor.revealLineInCenter(line);
+        }
+
+        editor.focus();
+        onClearPendingCursor();
       }
 
       // Selection change listener for Claude IDE Bridge (only when enabled)
@@ -427,6 +468,8 @@ export function EditorArea({
       claudeCodeIntegration.atMentionedKeybinding,
       t,
       setCurrentCursorLine,
+      pendingCursor,
+      onClearPendingCursor,
     ]
   );
 

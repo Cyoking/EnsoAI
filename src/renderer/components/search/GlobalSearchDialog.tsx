@@ -24,7 +24,7 @@ interface GlobalSearchDialogProps {
   onOpenChange: (open: boolean) => void;
   rootPath: string | undefined;
   initialMode?: SearchMode;
-  onOpenFile: (path: string, line?: number, column?: number) => void;
+  onOpenFile: (path: string, line?: number, column?: number, matchLength?: number) => void;
 }
 
 export function GlobalSearchDialog({
@@ -93,7 +93,7 @@ export function GlobalSearchDialog({
           if (item) {
             if ('line' in item) {
               // ContentSearchMatch
-              onOpenFile(item.path, item.line, item.column);
+              onOpenFile(item.path, item.line, item.column, item.matchLength);
             } else {
               // FileSearchResult
               onOpenFile(item.path);
@@ -142,7 +142,7 @@ export function GlobalSearchDialog({
   const handleItemSelect = useCallback(
     (item: FileSearchResult | ContentSearchMatch) => {
       if ('line' in item) {
-        onOpenFile(item.path, item.line, item.column);
+        onOpenFile(item.path, item.line, item.column, item.matchLength);
       } else {
         onOpenFile(item.path);
       }

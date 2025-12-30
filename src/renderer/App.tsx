@@ -8,7 +8,15 @@ import type {
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { panelTransition, type Repository, type TabId } from './App/constants';
-import { getStoredBoolean, getStoredTabMap, pathsEqual, STORAGE_KEYS } from './App/storage';
+import {
+  getStoredBoolean,
+  getStoredTabMap,
+  getStoredWorktreeMap,
+  getStoredWorktreeOrderMap,
+  pathsEqual,
+  STORAGE_KEYS,
+  saveWorktreeOrderMap,
+} from './App/storage';
 import { useAppKeyboardShortcuts } from './App/useAppKeyboardShortcuts';
 import { usePanelResize } from './App/usePanelResize';
 import { ActionPanel } from './components/layout/ActionPanel';
@@ -49,6 +57,12 @@ export default function App() {
   const { t } = useI18n();
   // Per-worktree tab state: { [worktreePath]: TabId }
   const [worktreeTabMap, setWorktreeTabMap] = useState<Record<string, TabId>>(getStoredTabMap);
+  // Per-repo worktree state: { [repoPath]: worktreePath }
+  const [repoWorktreeMap, setRepoWorktreeMap] =
+    useState<Record<string, string>>(getStoredWorktreeMap);
+  // Per-repo worktree display order: { [repoPath]: { [worktreePath]: displayOrder } }
+  const [worktreeOrderMap, setWorktreeOrderMap] =
+    useState<Record<string, Record<string, number>>>(getStoredWorktreeOrderMap);
   const [activeTab, setActiveTab] = useState<TabId>('chat');
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
@@ -214,7 +228,20 @@ export default function App() {
       setSelectedRepo(savedSelectedRepo);
     }
 
-    const savedWorktreePath = localStorage.getItem(STORAGE_KEYS.ACTIVE_WORKTREE);
+    // Migration: convert old single worktree to per-repo map
+    const oldWorktreePath = localStorage.getItem(STORAGE_KEYS.ACTIVE_WORKTREE);
+    const savedWorktreeMap = getStoredWorktreeMap();
+    if (oldWorktreePath && savedSelectedRepo && !savedWorktreeMap[savedSelectedRepo]) {
+      // Migrate old data to new format
+      const migrated = { ...savedWorktreeMap, [savedSelectedRepo]: oldWorktreePath };
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKTREES, JSON.stringify(migrated));
+      setRepoWorktreeMap(migrated);
+      localStorage.removeItem(STORAGE_KEYS.ACTIVE_WORKTREE);
+    }
+
+    // Restore worktree for selected repo
+    const worktreeMap = getStoredWorktreeMap();
+    const savedWorktreePath = savedSelectedRepo ? worktreeMap[savedSelectedRepo] : null;
     if (savedWorktreePath) {
       // Wait for worktrees to load before setting active worktree.
       setActiveWorktree({ path: savedWorktreePath } as GitWorktree);
@@ -226,6 +253,60 @@ export default function App() {
     localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(repos));
     setRepositories(repos);
   }, []);
+
+  // Reorder repositories
+  const handleReorderRepositories = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      const reordered = [...repositories];
+      const [moved] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, moved);
+      saveRepositories(reordered);
+    },
+    [repositories, saveRepositories]
+  );
+
+  // Reorder worktrees (update display order)
+  const handleReorderWorktrees = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (!selectedRepo) return;
+
+      // Get current order for this repo
+      const currentRepoOrder = worktreeOrderMap[selectedRepo] || {};
+
+      // Sort worktrees by current display order to get the visual order
+      const sortedWorktrees = [...worktrees].sort((a, b) => {
+        const orderA = currentRepoOrder[a.path] ?? Number.MAX_SAFE_INTEGER;
+        const orderB = currentRepoOrder[b.path] ?? Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
+
+      // Build new order
+      const orderedPaths = sortedWorktrees.map((wt) => wt.path);
+      const [movedPath] = orderedPaths.splice(fromIndex, 1);
+      orderedPaths.splice(toIndex, 0, movedPath);
+
+      // Create new order map for this repo
+      const newRepoOrder: Record<string, number> = {};
+      for (let i = 0; i < orderedPaths.length; i++) {
+        newRepoOrder[orderedPaths[i]] = i;
+      }
+
+      const newOrderMap = { ...worktreeOrderMap, [selectedRepo]: newRepoOrder };
+      setWorktreeOrderMap(newOrderMap);
+      saveWorktreeOrderMap(newOrderMap);
+    },
+    [selectedRepo, worktrees, worktreeOrderMap]
+  );
+
+  // Sort worktrees by display order for the current repo
+  const sortedWorktrees = selectedRepo
+    ? [...worktrees].sort((a, b) => {
+        const repoOrder = worktreeOrderMap[selectedRepo] || {};
+        const orderA = repoOrder[a.path] ?? Number.MAX_SAFE_INTEGER;
+        const orderB = repoOrder[b.path] ?? Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      })
+    : worktrees;
 
   // Listen for open path event from CLI (enso command)
   useEffect(() => {
@@ -271,14 +352,23 @@ export default function App() {
     }
   }, [selectedRepo]);
 
-  // Save active worktree to localStorage
+  // Save active worktree to per-repo map
   useEffect(() => {
-    if (activeWorktree) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKTREE, activeWorktree.path);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.ACTIVE_WORKTREE);
+    if (selectedRepo && activeWorktree) {
+      setRepoWorktreeMap((prev) => {
+        const updated = { ...prev, [selectedRepo]: activeWorktree.path };
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKTREES, JSON.stringify(updated));
+        return updated;
+      });
+    } else if (selectedRepo && !activeWorktree) {
+      setRepoWorktreeMap((prev) => {
+        const updated = { ...prev };
+        delete updated[selectedRepo];
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_WORKTREES, JSON.stringify(updated));
+        return updated;
+      });
     }
-  }, [activeWorktree]);
+  }, [selectedRepo, activeWorktree]);
 
   // Sync editor state with active worktree
   const currentEditorWorktree = useEditorStore((s) => s.currentWorktreePath);
@@ -313,8 +403,27 @@ export default function App() {
   }, [worktrees, activeWorktree]);
 
   const handleSelectRepo = (repoPath: string) => {
+    // Save current worktree's tab state before switching
+    if (activeWorktree?.path) {
+      setWorktreeTabMap((prev) => ({
+        ...prev,
+        [activeWorktree.path]: activeTab,
+      }));
+    }
+
     setSelectedRepo(repoPath);
-    setActiveWorktree(null);
+    // Restore previously selected worktree for this repo
+    const savedWorktreePath = repoWorktreeMap[repoPath];
+    if (savedWorktreePath) {
+      // Set temporary worktree with just the path; full object synced after worktrees load
+      setActiveWorktree({ path: savedWorktreePath } as GitWorktree);
+      // Restore the tab state for this worktree
+      const savedTab = worktreeTabMap[savedWorktreePath] || 'chat';
+      setActiveTab(savedTab);
+    } else {
+      setActiveWorktree(null);
+      setActiveTab('chat');
+    }
     // Editor state will be synced by useEffect
   };
 
@@ -513,6 +622,7 @@ export default function App() {
               onSelectRepo={handleSelectRepo}
               onAddRepository={handleAddRepository}
               onRemoveRepository={handleRemoveRepository}
+              onReorderRepositories={handleReorderRepositories}
               onOpenSettings={() => setSettingsOpen(true)}
               collapsed={false}
               onCollapse={() => setRepositoryCollapsed(true)}
@@ -538,7 +648,7 @@ export default function App() {
             className="relative h-full shrink-0 overflow-hidden"
           >
             <WorktreePanel
-              worktrees={worktrees}
+              worktrees={sortedWorktrees}
               activeWorktree={activeWorktree}
               branches={branches}
               projectName={selectedRepo?.split('/').pop() || ''}
@@ -549,6 +659,7 @@ export default function App() {
               onCreateWorktree={handleCreateWorktree}
               onRemoveWorktree={handleRemoveWorktree}
               onMergeWorktree={handleOpenMergeDialog}
+              onReorderWorktrees={handleReorderWorktrees}
               onInitGit={handleInitGit}
               onRefresh={() => {
                 refetch();

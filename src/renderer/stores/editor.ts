@@ -12,6 +12,7 @@ export interface PendingCursor {
   path: string;
   line: number;
   column?: number;
+  matchLength?: number;
 }
 
 interface WorktreeEditorState {
