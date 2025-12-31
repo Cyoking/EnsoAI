@@ -19,6 +19,7 @@ import { useCodeReviewContinueStore } from '@/stores/codeReviewContinue';
 import { TerminalPanel } from '../terminal';
 
 type TabId = 'chat' | 'file' | 'terminal' | 'source-control';
+type LayoutMode = 'columns' | 'tree';
 
 interface MainContentProps {
   activeTab: TabId;
@@ -27,6 +28,7 @@ interface MainContentProps {
   worktreePath?: string;
   repositoryCollapsed?: boolean;
   worktreeCollapsed?: boolean;
+  layoutMode?: LayoutMode;
   onExpandRepository?: () => void;
   onExpandWorktree?: () => void;
   onSwitchWorktree?: (worktreePath: string) => void;
@@ -39,6 +41,7 @@ export function MainContent({
   worktreePath,
   repositoryCollapsed = false,
   worktreeCollapsed = false,
+  layoutMode = 'columns',
   onExpandRepository,
   onExpandWorktree,
   onSwitchWorktree,
@@ -109,27 +112,42 @@ export function MainContent({
               >
                 {/* Left separator */}
                 {needsTrafficLightPadding && <div className="mx-1 h-4 w-px bg-border" />}
-                {/* Repository expand button - shown when both panels are collapsed */}
-                {repositoryCollapsed && onExpandRepository && (
-                  <button
-                    type="button"
-                    onClick={onExpandRepository}
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
-                    title={t('Expand Repository')}
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                  </button>
-                )}
-                {/* Worktree expand button */}
-                {onExpandWorktree && (
-                  <button
-                    type="button"
-                    onClick={onExpandWorktree}
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
-                    title={t('Expand Worktree')}
-                  >
-                    <GitBranch className="h-4 w-4" />
-                  </button>
+                {layoutMode === 'tree' ? (
+                  /* Tree mode: single expand button */
+                  onExpandRepository && (
+                    <button
+                      type="button"
+                      onClick={onExpandRepository}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+                      title={t('Expand Sidebar')}
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                    </button>
+                  )
+                ) : (
+                  /* Columns mode: separate repository and worktree buttons */
+                  <>
+                    {repositoryCollapsed && onExpandRepository && (
+                      <button
+                        type="button"
+                        onClick={onExpandRepository}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+                        title={t('Expand Repository')}
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                      </button>
+                    )}
+                    {onExpandWorktree && (
+                      <button
+                        type="button"
+                        onClick={onExpandWorktree}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+                        title={t('Expand Worktree')}
+                      >
+                        <GitBranch className="h-4 w-4" />
+                      </button>
+                    )}
+                  </>
                 )}
                 {/* Right separator */}
                 <div className="mx-1 h-4 w-px bg-border" />

@@ -1,6 +1,6 @@
 import type { Locale } from '@shared/i18n';
 import type { ShellInfo } from '@shared/types';
-import { FolderOpen, RefreshCw } from 'lucide-react';
+import { Columns3, FolderOpen, RefreshCw, TreePine } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useI18n } from '@/i18n';
-import { type TerminalRenderer, useSettingsStore } from '@/stores/settings';
+import { cn } from '@/lib/utils';
+import { type LayoutMode, type TerminalRenderer, useSettingsStore } from '@/stores/settings';
 
 interface UpdateStatus {
   status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
@@ -25,6 +26,8 @@ export function GeneralSettings() {
   const {
     language,
     setLanguage,
+    layoutMode,
+    setLayoutMode,
     terminalRenderer,
     setTerminalRenderer,
     terminalScrollback,
@@ -47,6 +50,26 @@ export function GeneralSettings() {
     setProxySettings,
   } = useSettingsStore();
   const { t, locale } = useI18n();
+
+  const layoutModeOptions: {
+    value: LayoutMode;
+    icon: React.ElementType;
+    label: string;
+    description: string;
+  }[] = [
+    {
+      value: 'columns',
+      icon: Columns3,
+      label: t('Columns'),
+      description: t('Three-column layout: repos, worktrees, workspace'),
+    },
+    {
+      value: 'tree',
+      icon: TreePine,
+      label: t('Tree'),
+      description: t('Two-column layout: tree sidebar, workspace'),
+    },
+  ];
 
   const numberFormatter = React.useMemo(
     () => new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US'),
@@ -178,6 +201,41 @@ export function GeneralSettings() {
             </SelectPopup>
           </Select>
         </div>
+      </div>
+
+      {/* Layout Section */}
+      <div className="border-t pt-4">
+        <h3 className="text-lg font-medium">{t('Layout')}</h3>
+        <p className="text-sm text-muted-foreground">{t('Choose sidebar layout mode')}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {layoutModeOptions.map((option) => (
+          <button
+            type="button"
+            key={option.value}
+            onClick={() => setLayoutMode(option.value)}
+            className={cn(
+              'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors',
+              layoutMode === option.value
+                ? 'border-primary bg-accent text-accent-foreground'
+                : 'border-transparent bg-muted/50 hover:bg-muted'
+            )}
+          >
+            <div
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full',
+                layoutMode === option.value
+                  ? 'bg-accent-foreground/20 text-accent-foreground'
+                  : 'bg-muted'
+              )}
+            >
+              <option.icon className="h-5 w-5" />
+            </div>
+            <span className="text-sm font-medium">{option.label}</span>
+            <span className="text-xs text-muted-foreground text-center">{option.description}</span>
+          </button>
+        ))}
       </div>
 
       <div className="border-t pt-4">

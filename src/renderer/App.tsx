@@ -22,6 +22,7 @@ import { usePanelResize } from './App/usePanelResize';
 import { ActionPanel } from './components/layout/ActionPanel';
 import { MainContent } from './components/layout/MainContent';
 import { RepositorySidebar } from './components/layout/RepositorySidebar';
+import { TreeSidebar } from './components/layout/TreeSidebar';
 import { WorktreePanel } from './components/layout/WorktreePanel';
 import { SettingsDialog } from './components/settings/SettingsDialog';
 import { UpdateNotification } from './components/UpdateNotification';
@@ -95,15 +96,16 @@ export default function App() {
     | null
   >(null);
 
+  // Layout mode from settings
+  const layoutMode = useSettingsStore((s) => s.layoutMode);
+
   // Panel resize hook
-  const { repositoryWidth, worktreeWidth, resizing, handleResizeStart } = usePanelResize();
+  const { repositoryWidth, worktreeWidth, resizing, handleResizeStart } =
+    usePanelResize(layoutMode);
 
   const worktreeError = useWorktreeStore((s) => s.error);
   const switchEditorWorktree = useEditorStore((s) => s.switchWorktree);
   const clearEditorWorktreeState = useEditorStore((s) => s.clearWorktreeState);
-
-  // Initialize settings store (for theme hydration)
-  useSettingsStore();
 
   // Navigation store for terminal -> editor file navigation
   const { pendingNavigation, clearNavigation } = useNavigationStore();
@@ -190,7 +192,7 @@ export default function App() {
     localStorage.setItem(STORAGE_KEYS.WORKTREE_TABS, JSON.stringify(worktreeTabMap));
   }, [worktreeTabMap]);
 
-  // Get worktrees for selected repo
+  // Get worktrees for selected repo (used in columns mode)
   const {
     data: worktrees = [],
     isLoading: worktreesLoading,
@@ -603,93 +605,153 @@ export default function App() {
     return window.electronAPI.worktree.getConflictContent(selectedRepo, file);
   };
 
+  // Combined sidebar width for tree layout
+  const treeSidebarWidth = repositoryWidth + worktreeWidth;
+
   return (
     <div className={`flex h-screen overflow-hidden ${resizing ? 'select-none' : ''}`}>
-      {/* Column 1: Repository Sidebar */}
-      <AnimatePresence initial={false}>
-        {!repositoryCollapsed && (
-          <motion.div
-            key="repository"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: repositoryWidth, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={panelTransition}
-            className="relative h-full shrink-0 overflow-hidden"
-          >
-            <RepositorySidebar
-              repositories={repositories}
-              selectedRepo={selectedRepo}
-              onSelectRepo={handleSelectRepo}
-              onAddRepository={handleAddRepository}
-              onRemoveRepository={handleRemoveRepository}
-              onReorderRepositories={handleReorderRepositories}
-              onOpenSettings={() => setSettingsOpen(true)}
-              collapsed={false}
-              onCollapse={() => setRepositoryCollapsed(true)}
-            />
-            {/* Resize handle */}
-            <div
-              className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
-              onMouseDown={handleResizeStart('repository')}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {layoutMode === 'tree' ? (
+        // Tree Layout: Single sidebar with repos as root nodes and worktrees as children
+        <AnimatePresence initial={false}>
+          {!repositoryCollapsed && (
+            <motion.div
+              key="tree-sidebar"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: treeSidebarWidth, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={panelTransition}
+              className="relative h-full shrink-0 overflow-hidden"
+            >
+              <TreeSidebar
+                repositories={repositories}
+                selectedRepo={selectedRepo}
+                activeWorktree={activeWorktree}
+                worktrees={sortedWorktrees}
+                branches={branches}
+                isLoading={worktreesLoading}
+                isCreating={createWorktreeMutation.isPending}
+                error={worktreeError}
+                onSelectRepo={handleSelectRepo}
+                onSelectWorktree={handleSelectWorktree}
+                onAddRepository={handleAddRepository}
+                onRemoveRepository={handleRemoveRepository}
+                onCreateWorktree={handleCreateWorktree}
+                onRemoveWorktree={handleRemoveWorktree}
+                onMergeWorktree={handleOpenMergeDialog}
+                onReorderRepositories={handleReorderRepositories}
+                onReorderWorktrees={handleReorderWorktrees}
+                onRefresh={() => {
+                  refetch();
+                  refetchBranches();
+                }}
+                onInitGit={handleInitGit}
+                onOpenSettings={() => setSettingsOpen(true)}
+                collapsed={false}
+                onCollapse={() => setRepositoryCollapsed(true)}
+              />
+              {/* Resize handle */}
+              <div
+                className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
+                onMouseDown={handleResizeStart('repository')}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      ) : (
+        // Columns Layout: Separate repo sidebar and worktree panel
+        <>
+          {/* Column 1: Repository Sidebar */}
+          <AnimatePresence initial={false}>
+            {!repositoryCollapsed && (
+              <motion.div
+                key="repository"
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: repositoryWidth, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={panelTransition}
+                className="relative h-full shrink-0 overflow-hidden"
+              >
+                <RepositorySidebar
+                  repositories={repositories}
+                  selectedRepo={selectedRepo}
+                  onSelectRepo={handleSelectRepo}
+                  onAddRepository={handleAddRepository}
+                  onRemoveRepository={handleRemoveRepository}
+                  onReorderRepositories={handleReorderRepositories}
+                  onOpenSettings={() => setSettingsOpen(true)}
+                  collapsed={false}
+                  onCollapse={() => setRepositoryCollapsed(true)}
+                />
+                {/* Resize handle */}
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
+                  onMouseDown={handleResizeStart('repository')}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      {/* Column 2: Worktree Panel */}
-      <AnimatePresence initial={false}>
-        {!worktreeCollapsed && (
-          <motion.div
-            key="worktree"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: worktreeWidth, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={panelTransition}
-            className="relative h-full shrink-0 overflow-hidden"
-          >
-            <WorktreePanel
-              worktrees={sortedWorktrees}
-              activeWorktree={activeWorktree}
-              branches={branches}
-              projectName={selectedRepo?.split('/').pop() || ''}
-              isLoading={worktreesLoading}
-              isCreating={createWorktreeMutation.isPending}
-              error={worktreeError}
-              onSelectWorktree={handleSelectWorktree}
-              onCreateWorktree={handleCreateWorktree}
-              onRemoveWorktree={handleRemoveWorktree}
-              onMergeWorktree={handleOpenMergeDialog}
-              onReorderWorktrees={handleReorderWorktrees}
-              onInitGit={handleInitGit}
-              onRefresh={() => {
-                refetch();
-                refetchBranches();
-              }}
-              width={worktreeWidth}
-              collapsed={false}
-              onCollapse={() => setWorktreeCollapsed(true)}
-              repositoryCollapsed={repositoryCollapsed}
-              onExpandRepository={() => setRepositoryCollapsed(false)}
-            />
-            {/* Resize handle */}
-            <div
-              className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
-              onMouseDown={handleResizeStart('worktree')}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {/* Column 2: Worktree Panel */}
+          <AnimatePresence initial={false}>
+            {!worktreeCollapsed && (
+              <motion.div
+                key="worktree"
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: worktreeWidth, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={panelTransition}
+                className="relative h-full shrink-0 overflow-hidden"
+              >
+                <WorktreePanel
+                  worktrees={sortedWorktrees}
+                  activeWorktree={activeWorktree}
+                  branches={branches}
+                  projectName={selectedRepo?.split('/').pop() || ''}
+                  isLoading={worktreesLoading}
+                  isCreating={createWorktreeMutation.isPending}
+                  error={worktreeError}
+                  onSelectWorktree={handleSelectWorktree}
+                  onCreateWorktree={handleCreateWorktree}
+                  onRemoveWorktree={handleRemoveWorktree}
+                  onMergeWorktree={handleOpenMergeDialog}
+                  onReorderWorktrees={handleReorderWorktrees}
+                  onInitGit={handleInitGit}
+                  onRefresh={() => {
+                    refetch();
+                    refetchBranches();
+                  }}
+                  width={worktreeWidth}
+                  collapsed={false}
+                  onCollapse={() => setWorktreeCollapsed(true)}
+                  repositoryCollapsed={repositoryCollapsed}
+                  onExpandRepository={() => setRepositoryCollapsed(false)}
+                />
+                {/* Resize handle */}
+                <div
+                  className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
+                  onMouseDown={handleResizeStart('worktree')}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
 
-      {/* Column 3: Main Content */}
+      {/* Main Content */}
       <MainContent
         activeTab={activeTab}
         onTabChange={handleTabChange}
         repoPath={selectedRepo || undefined}
         worktreePath={activeWorktree?.path}
         repositoryCollapsed={repositoryCollapsed}
-        worktreeCollapsed={worktreeCollapsed}
+        worktreeCollapsed={layoutMode === 'tree' ? repositoryCollapsed : worktreeCollapsed}
+        layoutMode={layoutMode}
         onExpandRepository={() => setRepositoryCollapsed(false)}
-        onExpandWorktree={() => setWorktreeCollapsed(false)}
+        onExpandWorktree={
+          layoutMode === 'tree'
+            ? () => setRepositoryCollapsed(false)
+            : () => setWorktreeCollapsed(false)
+        }
         onSwitchWorktree={handleSwitchWorktreePath}
       />
 

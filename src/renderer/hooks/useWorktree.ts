@@ -1,11 +1,13 @@
 import type {
   ConflictResolution,
+  GitWorktree,
   WorktreeCreateOptions,
   WorktreeMergeCleanupOptions,
   WorktreeMergeOptions,
   WorktreeRemoveOptions,
 } from '@shared/types';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useWorktreeStore } from '@/stores/worktree';
 
 export function useWorktreeList(workdir: string | null) {
@@ -31,6 +33,67 @@ export function useWorktreeList(workdir: string | null) {
     enabled: !!workdir,
     retry: false, // Don't retry on git errors
   });
+}
+
+/**
+ * Fetch worktrees for multiple repositories in parallel.
+ * Returns a map of repo path -> worktrees array and error map.
+ */
+export function useWorktreeListMultiple(repoPaths: string[]) {
+  const queries = useQueries({
+    queries: repoPaths.map((repoPath) => ({
+      queryKey: ['worktree', 'listMultiple', repoPath],
+      queryFn: async () => {
+        const worktrees = await window.electronAPI.worktree.list(repoPath);
+        return { repoPath, worktrees };
+      },
+      enabled: true,
+      retry: false,
+      staleTime: 30000, // Cache for 30 seconds to avoid excessive refetching
+    })),
+  });
+
+  const worktreesMap = useMemo(() => {
+    const map: Record<string, GitWorktree[]> = {};
+    for (let i = 0; i < repoPaths.length; i++) {
+      const query = queries[i];
+      if (query?.data) {
+        map[query.data.repoPath] = query.data.worktrees;
+      }
+    }
+    return map;
+  }, [queries, repoPaths]);
+
+  const errorsMap = useMemo(() => {
+    const map: Record<string, string | null> = {};
+    for (let i = 0; i < repoPaths.length; i++) {
+      const query = queries[i];
+      if (query?.error) {
+        map[repoPaths[i]] = query.error instanceof Error ? query.error.message : 'Failed to load';
+      } else {
+        map[repoPaths[i]] = null;
+      }
+    }
+    return map;
+  }, [queries, repoPaths]);
+
+  const loadingMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    for (let i = 0; i < repoPaths.length; i++) {
+      map[repoPaths[i]] = queries[i]?.isLoading ?? false;
+    }
+    return map;
+  }, [queries, repoPaths]);
+
+  const isLoading = queries.some((q) => q.isLoading);
+
+  const refetchAll = () => {
+    for (const query of queries) {
+      query.refetch();
+    }
+  };
+
+  return { worktreesMap, errorsMap, loadingMap, isLoading, refetchAll };
 }
 
 export function useWorktreeCreate() {

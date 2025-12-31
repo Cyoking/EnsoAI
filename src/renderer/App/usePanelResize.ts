@@ -3,6 +3,7 @@ import {
   REPOSITORY_DEFAULT,
   REPOSITORY_MAX,
   REPOSITORY_MIN,
+  TREE_SIDEBAR_MIN,
   WORKTREE_DEFAULT,
   WORKTREE_MAX,
   WORKTREE_MIN,
@@ -10,8 +11,9 @@ import {
 import { getStoredNumber, STORAGE_KEYS } from './storage';
 
 type ResizePanel = 'repository' | 'worktree' | null;
+type LayoutMode = 'columns' | 'tree';
 
-export function usePanelResize() {
+export function usePanelResize(layoutMode: LayoutMode = 'columns') {
   const [repositoryWidth, setRepositoryWidth] = useState(() =>
     getStoredNumber(STORAGE_KEYS.REPOSITORY_WIDTH, REPOSITORY_DEFAULT)
   );
@@ -28,9 +30,14 @@ export function usePanelResize() {
       e.preventDefault();
       setResizing(panel);
       startXRef.current = e.clientX;
-      startWidthRef.current = panel === 'repository' ? repositoryWidth : worktreeWidth;
+      // In tree mode, track combined width for repository panel resize
+      if (layoutMode === 'tree' && panel === 'repository') {
+        startWidthRef.current = repositoryWidth + worktreeWidth;
+      } else {
+        startWidthRef.current = panel === 'repository' ? repositoryWidth : worktreeWidth;
+      }
     },
-    [repositoryWidth, worktreeWidth]
+    [repositoryWidth, worktreeWidth, layoutMode]
   );
 
   useEffect(() => {
@@ -41,7 +48,15 @@ export function usePanelResize() {
       const newWidth = startWidthRef.current + delta;
 
       if (resizing === 'repository') {
-        setRepositoryWidth(Math.max(REPOSITORY_MIN, Math.min(REPOSITORY_MAX, newWidth)));
+        if (layoutMode === 'tree') {
+          // In tree mode, resize the combined sidebar with tree-specific min
+          const treeMax = REPOSITORY_MAX + WORKTREE_MAX;
+          const clampedTotal = Math.max(TREE_SIDEBAR_MIN, Math.min(treeMax, newWidth));
+          // Distribute the change to repositoryWidth only
+          setRepositoryWidth(clampedTotal - worktreeWidth);
+        } else {
+          setRepositoryWidth(Math.max(REPOSITORY_MIN, Math.min(REPOSITORY_MAX, newWidth)));
+        }
       } else {
         setWorktreeWidth(Math.max(WORKTREE_MIN, Math.min(WORKTREE_MAX, newWidth)));
       }
@@ -58,7 +73,7 @@ export function usePanelResize() {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [resizing]);
+  }, [resizing, layoutMode, worktreeWidth]);
 
   // Save panel sizes to localStorage
   useEffect(() => {
