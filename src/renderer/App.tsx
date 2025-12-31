@@ -219,7 +219,21 @@ export default function App() {
     if (savedRepos) {
       try {
         const parsed = JSON.parse(savedRepos) as Repository[];
-        setRepositories(parsed);
+        // Migration: fix repo names that contain full paths (Windows compatibility fix)
+        let needsMigration = false;
+        const migrated = parsed.map((repo) => {
+          // If name contains path separators, it's a full path that needs fixing
+          if (repo.name.includes('/') || repo.name.includes('\\')) {
+            needsMigration = true;
+            const fixedName = repo.path.split(/[\\/]/).pop() || repo.path;
+            return { ...repo, name: fixedName };
+          }
+          return repo;
+        });
+        if (needsMigration) {
+          localStorage.setItem(STORAGE_KEYS.REPOSITORIES, JSON.stringify(migrated));
+        }
+        setRepositories(migrated);
       } catch {
         // ignore
       }
