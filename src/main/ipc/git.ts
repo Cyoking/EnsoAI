@@ -304,6 +304,8 @@ ${truncatedDiff}`;
               });
             }
           } catch {
+            console.error('[GenerateCommitMsg] Failed to parse stdout:', stdout);
+            console.error('[GenerateCommitMsg] stderr:', stderr);
             resolve({ success: false, error: 'Failed to parse response' });
           }
         });
