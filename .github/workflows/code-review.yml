@@ -1,14 +1,16 @@
 name: Code Review
 
 on:
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths:
+      - "src/**"
+      - "electron.vite.config.ts"
+      - "package.json"
 
 jobs:
   code-review:
-    if: |
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '@claude')
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -19,27 +21,10 @@ jobs:
       id-token: write
 
     steps:
-      - name: Get PR info
-        id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-            core.setOutput('head_ref', pr.head.ref);
-            core.setOutput('head_sha', pr.head.sha);
-            core.setOutput('head_repo', pr.head.repo.full_name);
-            core.setOutput('number', pr.number);
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          repository: ${{ steps.pr.outputs.head_repo }}
-          ref: ${{ steps.pr.outputs.head_ref }}
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Hide Previous Review Comments
         uses: int128/hide-comment-action@v1
@@ -68,7 +53,7 @@ jobs:
             }
           prompt: |
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ steps.pr.outputs.number }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
 
             🔍 **代码审查任务**：请对此Pull Request进行全面的代码审查，提供专业且友好的反馈。
 
@@ -115,7 +100,7 @@ jobs:
 
             1. **文件链接**：使用反引号包围的代码块格式，可直接点击跳转
                ```markdown
-               [`src/main/java/FileName.java:100`](https://github.com/${{ github.repository }}/blob/${{ steps.pr.outputs.head_sha }}/src/main/java/FileName.java#L100)
+               [`src/main/java/FileName.java:100`](https://github.com/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/src/main/java/FileName.java#L100)
                ```
 
                **重要**：文件路径必须用反引号包围，格式为 `文件完整路径:行号`
@@ -326,43 +311,6 @@ jobs:
             🚨 较差 (0-59分):   ███░░░░░░░ 严重问题，必须立即修复
             ```
 
-            **🎨 交互元素使用指南**：
-
-            | 🖱️ 交互元素 | 📝 含义说明 | 💡 使用建议 |
-            |-------------|------------|------------|
-            | 🔴 红色标识 | 紧急/严重问题 | 立即停止其他工作，优先修复 |
-            | 🟡 黄色标识 | 重要/中等问题 | 本版本内必须完成修复 |
-            | 🔵 蓝色标识 | 一般/轻微问题 | 后续版本改进，或技术债务 |
-            | ✅ 绿色勾选 | 通过检查/无问题 | 代码质量良好，继续保持 |
-            | 📊 进度条 | 问题分布可视化 | 快速了解代码质量分布 |
-            | 🏷️ 标签徽章 | 分类和优先级 | 便于筛选和项目管理 |
-            | 📍 文件链接 | 可点击跳转 | 直达问题代码位置 |
-            | 📝 修复建议 | 具体改进方案 | 协助制定开发计划 |
-
-            **📱 最佳使用体验**：
-            - 💻 建议在桌面端查看，获得最佳视觉效果
-            - 📖 先查看概览了解整体情况，再深入具体问题
-            - 🎯 按优先级分组处理，避免遗漏重要问题
-            - 🤝 团队协作时可直接引用问题编号讨论
-
-            **规则引用示例**：
-            ```markdown
-            > 📄 **违反规则**: `.rules/api-design.md:L25-30`
-            >
-            > ```
-            > ## API参数校验规范
-            >
-            > 所有Controller层的API接口必须对入参进行校验：
-            > 1. 使用@Valid注解进行Bean Validation
-            > 2. 关键参数不能为空时使用@NotNull、@NotBlank
-            > 3. 数值范围使用@Min、@Max限制
-            > ```
-            >
-            > **规则说明**: [查看完整API设计规范](https://github.com/${{ github.repository }}/blob/main/.rules/api-design.md#L25)
-            ```
-
-            这样开发者可以直接看到违反了哪条具体规则，无需点击链接跳转。
-
             **🚀 最终合并建议**：
 
             在报告最后必须添加"合并决策建议"部分，格式如下：
@@ -425,16 +373,6 @@ jobs:
             2. **后续版本改进**：
                - [ ] 优化建议1
                - [ ] 优化建议2
-
-            3. **团队协作建议**：
-               - 👥 建议相关同事一起review关键部分
-               - 📚 建议完善相关文档或注释
-               - 🧪 建议增加特定场景的测试用例
-
-            ---
-
-            > 💡 **温馨提示**：此建议基于当前代码分析生成，最终合并决策请结合项目实际情况和团队讨论确定。
-            > 🤝 **协作建议**：建议PR作者和reviewer进行充分沟通，确保代码质量和项目目标一致。
             ```
 
             **合并建议生成规则**：

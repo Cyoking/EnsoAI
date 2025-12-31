@@ -35,7 +35,7 @@
     "@parcel/watcher": "^2.5.1",
     "@shikijs/monaco": "^3.20.0",
     "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/react-query": "^5.90.12",
+    "@tanstack/react-query": "^5.90.16",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/addon-search": "^0.16.0",
     "@xterm/addon-unicode11": "^0.9.0",
@@ -89,5 +89,12 @@
     "*.{js,ts,jsx,tsx,json,css}": [
       "biome check --write --no-errors-on-unmatched"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "dmg-builder": "26.4.0",
+      "app-builder-lib": "26.4.0",
+      "electron-builder-squirrel-windows": "26.4.0"
+    }
   }
 }
