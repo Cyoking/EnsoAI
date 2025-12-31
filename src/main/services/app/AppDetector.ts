@@ -40,8 +40,19 @@ export class AppDetector {
 
   private async detectWindowsApps(): Promise<DetectedApp[]> {
     const detected: DetectedApp[] = [];
+    const detectedIds = new Set<string>();
 
+    // First, detect apps from registry (more reliable for JetBrains IDEs)
+    const registryApps = await this.detectWindowsAppsFromRegistry();
+    for (const app of registryApps) {
+      detected.push(app);
+      detectedIds.add(app.bundleId);
+    }
+
+    // Then check predefined paths for apps not found in registry
     for (const app of WINDOWS_APPS) {
+      if (detectedIds.has(app.id)) continue;
+
       for (const exePath of app.exePaths) {
         // Check if it's an absolute path or a command name
         const isAbsolutePath = exePath.includes('\\') || exePath.includes('/');
@@ -54,6 +65,7 @@ export class AppDetector {
               category: app.category,
               path: exePath,
             });
+            detectedIds.add(app.id);
             break;
           }
         } else {
@@ -68,6 +80,7 @@ export class AppDetector {
                 category: app.category,
                 path: resolvedPath,
               });
+              detectedIds.add(app.id);
               break;
             }
           } catch {
@@ -79,6 +92,130 @@ export class AppDetector {
 
     this.detectedApps = detected;
     this.initialized = true;
+    return detected;
+  }
+
+  private async detectWindowsAppsFromRegistry(): Promise<DetectedApp[]> {
+    const detected: DetectedApp[] = [];
+
+    // JetBrains product name patterns and their bundleIds
+    const jetbrainsProducts: Record<string, { id: string; category: AppCategory }> = {
+      'IntelliJ IDEA': { id: 'com.jetbrains.intellij', category: AppCategory.Editor },
+      WebStorm: { id: 'com.jetbrains.WebStorm', category: AppCategory.Editor },
+      PyCharm: { id: 'com.jetbrains.pycharm', category: AppCategory.Editor },
+      GoLand: { id: 'com.jetbrains.goland', category: AppCategory.Editor },
+      CLion: { id: 'com.jetbrains.CLion', category: AppCategory.Editor },
+      RustRover: { id: 'com.jetbrains.rustrover', category: AppCategory.Editor },
+      Rider: { id: 'com.jetbrains.rider', category: AppCategory.Editor },
+      PhpStorm: { id: 'com.jetbrains.PhpStorm', category: AppCategory.Editor },
+      DataGrip: { id: 'com.jetbrains.datagrip', category: AppCategory.Editor },
+      'Android Studio': { id: 'com.google.android.studio', category: AppCategory.Editor },
+      Fleet: { id: 'com.jetbrains.fleet', category: AppCategory.Editor },
+    };
+
+    // Query registry for installed apps
+    const registryPaths = [
+      'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+      'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+      'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    ];
+
+    for (const regPath of registryPaths) {
+      try {
+        // Get all subkeys
+        const { stdout: keysOutput } = await execAsync(`reg query "${regPath}"`, {
+          timeout: 5000,
+          encoding: 'utf8',
+        });
+
+        const subkeys = keysOutput
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith(regPath));
+
+        for (const subkey of subkeys) {
+          try {
+            const { stdout: valuesOutput } = await execAsync(`reg query "${subkey}"`, {
+              timeout: 3000,
+              encoding: 'utf8',
+            });
+
+            // Parse DisplayName and InstallLocation/DisplayIcon
+            const displayNameMatch = valuesOutput.match(/DisplayName\s+REG_SZ\s+(.+)/);
+            const installLocationMatch = valuesOutput.match(/InstallLocation\s+REG_SZ\s+(.+)/);
+            const displayIconMatch = valuesOutput.match(/DisplayIcon\s+REG_SZ\s+(.+)/);
+
+            if (!displayNameMatch) continue;
+            const displayName = displayNameMatch[1].trim();
+
+            // Check if it's a JetBrains product
+            for (const [productName, productInfo] of Object.entries(jetbrainsProducts)) {
+              if (displayName.includes(productName)) {
+                // Get executable path
+                let exePath = '';
+                if (installLocationMatch) {
+                  const installLocation = installLocationMatch[1].trim();
+                  // JetBrains IDEs have exe in bin folder
+                  const possibleExe = join(
+                    installLocation,
+                    'bin',
+                    `${productName.toLowerCase().replace(/\s+/g, '')}64.exe`
+                  );
+                  if (existsSync(possibleExe)) {
+                    exePath = possibleExe;
+                  } else {
+                    // Try common exe names
+                    const exeNames = [
+                      'idea64.exe',
+                      'webstorm64.exe',
+                      'pycharm64.exe',
+                      'goland64.exe',
+                      'clion64.exe',
+                      'rustrover64.exe',
+                      'rider64.exe',
+                      'phpstorm64.exe',
+                      'datagrip64.exe',
+                      'studio64.exe',
+                      'fleet.exe',
+                    ];
+                    for (const exeName of exeNames) {
+                      const testPath = join(installLocation, 'bin', exeName);
+                      if (existsSync(testPath)) {
+                        exePath = testPath;
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                if (!exePath && displayIconMatch) {
+                  // Try to extract exe path from DisplayIcon
+                  const iconPath = displayIconMatch[1].trim().split(',')[0].replace(/"/g, '');
+                  if (existsSync(iconPath) && iconPath.endsWith('.exe')) {
+                    exePath = iconPath;
+                  }
+                }
+
+                if (exePath) {
+                  detected.push({
+                    name: productName,
+                    bundleId: productInfo.id,
+                    category: productInfo.category,
+                    path: exePath,
+                  });
+                }
+                break;
+              }
+            }
+          } catch {
+            // Skip this subkey
+          }
+        }
+      } catch {
+        // Skip this registry path
+      }
+    }
+
     return detected;
   }
 
