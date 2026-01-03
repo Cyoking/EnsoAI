@@ -218,7 +218,7 @@ export const defaultClaudeCodeIntegrationSettings: ClaudeCodeIntegrationSettings
   selectionChangedDebounce: 300,
   atMentionedKeybinding: { key: 'm', meta: true, shift: true }, // Cmd/Ctrl+Shift+M
   stopHookEnabled: true, // Enable Stop hook for precise agent completion notifications
-  statusLineEnabled: true, // Enable Status Line hook by default
+  statusLineEnabled: false, // Disable Status Line hook by default
   statusLineFields: defaultStatusLineFieldSettings,
   providers: [],
 };
